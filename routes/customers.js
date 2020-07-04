@@ -1,6 +1,6 @@
-
 const express = require('express');
 const router = express.Router();
+const Customer = require('./../models/customer');
 
 router.get('/test', (req,res,next)=> {
   return res.json({status:'success'});

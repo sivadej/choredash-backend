@@ -9,52 +9,13 @@ const Provider = require('./models/provider');
 const Chore = require('./models/chore');
 
 const customersRoutes = require('./routes/customers');
+const choresRoutes = require('./routes/chores');
 
 app.use('/api/customers', customersRoutes);
+app.use('/api/chores', choresRoutes);
 
-app.get('/chores', async (req,res,next)=>{
-  console.log('get chores');
-  try {
-    const response = await Chore.getAll();
-    return res.json(response);
-  }
-  catch (err) {
-    return next(err);
-  }
-});
 
-app.get('/chores/:id', async (req,res,next)=>{
-  console.log('get chores');
-  try {
-    const response = await Chore.getItemDetails(req.params.id);
-    return res.json(response);
-  }
-  catch (err) {
-    return next(err);
-  }
-});
-
-app.get('/providers', async (req,res,next)=>{
-  console.log('get providers');
-  try {
-    const response = await Provider.getAll();
-    return res.json(response);
-  }
-  catch (err) {
-    return next(err);
-  }
-});
-
-app.get('/providers/1', async (req,res,next)=>{
-  console.log('get provider 1');
-  try {
-    const response = await Provider.findByKeyValue('id',1);
-    return res.json(response);
-  }
-  catch (err) {
-    return next(err);
-  }
-});
+// general error handlers
 
 app.use((req, res, next) => {
   const err = new Error('Not Found');

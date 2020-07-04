@@ -11,10 +11,10 @@ class Chore {
     return result;
   }
 
-  // retrieve details by id
-  static async getItemDetails(id) {
-    console.log('chore.getItemDetails invoked. id:',id);
-    const result = await db.collection(COLLECTION_NAME).findOne({id:id});
+  // retrieve details by item_code
+  static async getItemDetails(itemCode) {
+    console.log('chore.getItemDetails invoked. itemCode:',itemCode);
+    const result = await db.collection(COLLECTION_NAME).findOne({item_code:itemCode});
     return result;
   }
 
