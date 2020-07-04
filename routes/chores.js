@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Chore = require('./../models/chore');
 
-router.get('/test', (req,res,next)=> {
-  return res.json({status:'success from chores routes'});
+router.get('/hello', (req,res,next)=> {
+  return res.json({status:'hello from chores routes'});
 });
 
 router.get('/', async (req,res,next)=>{
