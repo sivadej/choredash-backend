@@ -4,9 +4,6 @@ const cors = require('cors');
 app.use(express.json());
 app.use(cors());
 
-const Customer = require('./models/customer');
-const Provider = require('./models/provider');
-const Chore = require('./models/chore');
 const MapsApi = require('./mapsApi/mapsApi');
 
 const customersRoutes = require('./routes/customers');
@@ -19,8 +16,15 @@ app.use('/api/providers', providersRoutes);
 
 
 app.get('/coords', async (req,res,next)=>{
-  const coords = await MapsApi.getCoordinates('1201 w 72nd ave');
-  return res.status(200).json({result: coords});
+  console.log(req.body);
+  //const coords = await MapsApi.getCoordinates('1201 w 72nd ave');
+  //return res.status(200).json({result: coords});
+})
+
+app.get('/dist', async (req,res,next)=>{
+  console.log(req.body);
+  const dist = await MapsApi.getDistances(req.body.customer_location, req.body.provider_locations);
+  return res.json(dist);
 })
 
 // general error handlers

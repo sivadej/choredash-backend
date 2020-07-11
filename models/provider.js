@@ -1,5 +1,4 @@
 const db = require('../db');
-const bcrypt = require('bcrypt');
 
 const COLLECTION_NAME = 'providers';
 

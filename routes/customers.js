@@ -11,6 +11,12 @@ router.get('/', async (req,res,next)=>{
   return res.json(response);
 });
 
+// POST: add new customer
+router.post('/', async (req,res,next)=> {
+  const response = await Customer.addNew(req.body);
+  return res.json(response);
+});
+
 // router.get('/1', async (req,res,next)=>{
 //   console.log('get test customer');
 //   const response = await Customer.findByKeyValue('address','8709 Little Brook Cir, Anchorage, AK 99507');
