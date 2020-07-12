@@ -1,6 +1,7 @@
 const db = require('../db');
 const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
+const { ObjectId } = require('mongodb');
 
 const COLLECTION = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -13,11 +14,11 @@ class Customer {
     return result;
   }
 
-  static async findByKeyValue(key, value) {
-    console.log('findbykv invoked');
-    const result = await db.collection(COLLECTION).findOne({ [key]: value });
-    return result;
-  }
+  // static async findByKeyValue(key, value) {
+  //   console.log('findbykv invoked');
+  //   const result = await db.collection(COLLECTION).findOne({ [key]: value });
+  //   return result;
+  // }
 
   // addNew(data): Registers new user
   // Input body { email, first_name, last_name, password,
@@ -52,18 +53,26 @@ class Customer {
     return result.ops[0];
   }
 
+  // authenticate(data): return user on valid authentication
+  // params: object { email, password }
+  static async authenticate(data) {
+    const { email, password } = data;
+    // find user
+
+    // compare hashed passwords
+  }
+
   // getById(id): Retrieve customer data by id
   // Return: { _id, email, first_name, last_name, address,
   //           current_location, orders }
-
-  // getByEmail(email): Retrieve customer data by email
-  // Return: { _id, email, first_name, last_name, address,
-  //           current_location, orders }
+  static async getById(id) {
+    console.log('getting by id', id)
+    const result = await db.collection(COLLECTION).findOne({ _id:  ObjectId(id) });
+    return result;
+  }
 
   // updateProfile(data)
-  // Return: {}
-
-  // updateLocation(data)
+  // 
   // Return: {}
 
   // updateOrders(data)
