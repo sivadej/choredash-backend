@@ -16,9 +16,22 @@ router.get('/:id', async (req,res,next)=> {
   return res.json(response);
 });
 
+// PATCH /id - edit customer by id
+router.patch('/:id', async (req,res,next)=> {
+  const response = await Customer.updateProfile(req.params.id, req.body);
+  return res.json(response);
+});
+
 // POST: add new customer
 router.post('/', async (req,res,next)=> {
   const response = await Customer.addNew(req.body);
+  return res.json(response);
+});
+
+
+
+router.post('/auth', async (req,res,next) => {
+  const response = await Customer.authenticate(req.body);
   return res.json(response);
 });
 

@@ -7,7 +7,6 @@ const COLLECTION = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
 
 class Customer {
-
   static async getAll() {
     console.log('Customer.getAll invoked');
     const result = await db.collection(COLLECTION).find().toArray();
@@ -47,7 +46,12 @@ class Customer {
     coords = coords.results[0].geometry.location;
 
     // add to database
-    const custObj = { ...customer, password: hashedPassword, current_location: coords, orders: [] };
+    const custObj = {
+      ...customer,
+      password: hashedPassword,
+      current_location: coords,
+      orders: [],
+    };
     const result = await db.collection(COLLECTION).insertOne(custObj);
 
     return result.ops[0];
@@ -58,6 +62,20 @@ class Customer {
   static async authenticate(data) {
     const { email, password } = data;
     // find user
+    console.log('finding user for email',email)
+    const user = await db
+      .collection(COLLECTION)
+      .findOne({ email: email });
+    
+    if (user) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (isValid) {
+        delete user.password; //do not return password in response
+        return user;
+      }
+    }
+
+    return {error: 'invalid credentials'};
 
     // compare hashed passwords
   }
@@ -66,21 +84,29 @@ class Customer {
   // Return: { _id, email, first_name, last_name, address,
   //           current_location, orders }
   static async getById(id) {
-    console.log('getting by id', id)
-    const result = await db.collection(COLLECTION).findOne({ _id:  ObjectId(id) });
+    console.log('getting by id', id);
+    const result = await db
+      .collection(COLLECTION)
+      .findOne({ _id: ObjectId(id) });
     return result;
   }
 
   // updateProfile(data)
-  // 
+  //
   // Return: {}
+  static async updateProfile(id, data) {
+    console.log('updating user..');
+    // TODO: handle partial updates. currently this replaces entire object
+    const result = await db
+      .collection(COLLECTION)
+      .update({ _id: ObjectId(id) }, { $set: { data } });
+  }
 
   // updateOrders(data)
   // Return: {}
 
   // deleteCustomer()
   // Return: { message }
-
 }
 
 module.exports = Customer;
