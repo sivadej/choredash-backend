@@ -95,18 +95,21 @@ class Customer {
   //
   // Return: {}
   static async updateProfile(id, data) {
-    console.log('updating user..');
-    // TODO: handle partial updates. currently this replaces entire object
+    console.log('updating user..',id,data);
+    // TODO: check if valid user before performing update.
+    // return confirmation of update
     const result = await db
       .collection(COLLECTION)
-      .update({ _id: ObjectId(id) }, { $set: { data } });
+      .updateOne({ _id: ObjectId(id) }, { $set: { ...data } });
+    return result;
   }
 
-  // updateOrders(data)
+  // updateOrders(id, data)
   // Return: {}
 
-  // deleteCustomer()
+  // deleteCustomer(id)
   // Return: { message }
+  
 }
 
 module.exports = Customer;
