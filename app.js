@@ -14,19 +14,6 @@ app.use('/api/customers', customersRoutes);
 app.use('/api/chores', choresRoutes);
 app.use('/api/providers', providersRoutes);
 
-
-app.get('/coords', async (req,res,next)=>{
-  console.log(req.body);
-  //const coords = await MapsApi.getCoordinates('1201 w 72nd ave');
-  //return res.status(200).json({result: coords});
-})
-
-app.get('/dist', async (req,res,next)=>{
-  console.log(req.body);
-  const dist = await MapsApi.getDistances(req.body.customer_location, req.body.provider_locations);
-  return res.json(dist);
-})
-
 // general error handlers
 
 app.use((req, res, next) => {

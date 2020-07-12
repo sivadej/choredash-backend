@@ -13,12 +13,6 @@ class Customer {
     return result;
   }
 
-  // static async findByKeyValue(key, value) {
-  //   console.log('findbykv invoked');
-  //   const result = await db.collection(COLLECTION).findOne({ [key]: value });
-  //   return result;
-  // }
-
   // addNew(data): Registers new user
   // Input body { email, first_name, last_name, password,
   //              address:{ line1, line2, city, state, zip },
@@ -27,7 +21,6 @@ class Customer {
   //             }
   // call function getOne() using newly generated cust id -> return body?
   // Return: { message, customer:{} }
-
   static async addNew(customer) {
     // check for duplicate email address
     const duplicateCheck = await db
@@ -62,11 +55,9 @@ class Customer {
   static async authenticate(data) {
     const { email, password } = data;
     // find user
-    console.log('finding user for email',email)
-    const user = await db
-      .collection(COLLECTION)
-      .findOne({ email: email });
-    
+    console.log('finding user for email', email);
+    const user = await db.collection(COLLECTION).findOne({ email: email });
+
     if (user) {
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid) {
@@ -75,9 +66,7 @@ class Customer {
       }
     }
 
-    return {error: 'invalid credentials'};
-
-    // compare hashed passwords
+    return { error: 'invalid credentials' };
   }
 
   // getById(id): Retrieve customer data by id
@@ -95,7 +84,7 @@ class Customer {
   //
   // Return: {}
   static async updateProfile(id, data) {
-    console.log('updating user..',id,data);
+    console.log('updating user..', id, data);
     // TODO: check if valid user before performing update.
     // return confirmation of update
     const result = await db
@@ -107,9 +96,17 @@ class Customer {
   // updateOrders(id, data)
   // Return: {}
 
-  // deleteCustomer(id)
+  // deleteCustomer(id, password)
   // Return: { message }
-  
+  static async delete(id) {
+    console.log('deleting user', id);
+    const result = await db
+      .collection(COLLECTION)
+      .deleteOne({ _id: ObjectId(id) });
+    if (result.deletedCount === 1)
+      return { message: 'successfully deleted user' };
+    else return { message: 'error' };
+  }
 }
 
 module.exports = Customer;
