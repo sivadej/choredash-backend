@@ -9,10 +9,12 @@ const MapsApi = require('./mapsApi/mapsApi');
 const customersRoutes = require('./routes/customers');
 const choresRoutes = require('./routes/chores');
 const providersRoutes = require('./routes/providers');
+const authRoutes = require('./routes/auth');
 
 app.use('/api/customers', customersRoutes);
 app.use('/api/chores', choresRoutes);
 app.use('/api/providers', providersRoutes);
+app.use('/api/auth', authRoutes);
 
 // general error handlers
 

@@ -10,12 +10,14 @@ router.get('/', async (req, res, next) => {
 });
 
 // GET /id - get customer by id
+// restrict to admin/currentid use only
 router.get('/:id', async (req, res, next) => {
   const response = await Customer.getById(req.params.id);
   return res.json(response);
 });
 
 // PATCH /id - edit customer by id
+// restrict to admin/currentid use only
 router.patch('/:id', async (req, res, next) => {
   const response = await Customer.updateProfile(req.params.id, req.body);
   return res.json(response);
@@ -28,11 +30,14 @@ router.post('/', async (req, res, next) => {
 });
 
 // DELETE: remove customer
+// restrict to admin/currentid use only
 router.delete('/:id', async (req, res, next) => {
   const response = await Customer.delete(req.params.id);
   return res.json(response);
 });
 
+// POST /auth - authenticate user
+// params: object { email, password }
 router.post('/auth', async (req, res, next) => {
   const response = await Customer.authenticate(req.body);
   return res.json(response);
