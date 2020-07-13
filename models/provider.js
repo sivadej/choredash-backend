@@ -2,14 +2,15 @@ const db = require('../db');
 const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
+const { DB_NAME } = require('./../config');
 
-const COLLECTION = 'providers';
+const COLL = 'providers';
 const BCRYPT_WORK_FACTOR = 10;
 
 class Provider {
   static async getAll() {
     console.log('Provider.getAll invoked');
-    const result = await db.collection(COLLECTION).find().toArray();
+    const result = await db.db(DB_NAME).collection(COLL).find().toArray();
     return result;
   }
 
@@ -17,8 +18,9 @@ class Provider {
   static async getById(id) {
     console.log('getting provider by id', id);
     const result = await db
-      .collection(COLLECTION)
-      .findOne({ _id: ObjectId(id) });
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ _id: new ObjectId(id) });
     return result || { error: 'provider not found' };
   }
 
@@ -33,7 +35,8 @@ class Provider {
   static async addNew(provider) {
     // check for duplicate email address
     const duplicateCheck = await db
-      .collection(COLLECTION)
+      .db(DB_NAME)
+      .collection(COLL)
       .findOne({ email: provider.email });
     if (duplicateCheck !== null) return { message: 'email address in use' };
 
@@ -54,7 +57,7 @@ class Provider {
       current_location: coords,
       orders: [],
     };
-    const result = await db.collection(COLLECTION).insertOne(custObj);
+    const result = await db.db(DB_NAME).collection(COLL).insertOne(custObj);
 
     return result.ops[0];
   }
@@ -65,17 +68,20 @@ class Provider {
     const { email, password } = data;
     // find user
     console.log('finding user for email', email);
-    const user = await db.collection(COLLECTION).findOne({ email: email });
+    const user = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ email: email });
 
     if (user) {
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid) {
         delete user.password; //do not return password in response
-        return user;
+        return { authenticated: true, user: user };
       }
     }
 
-    return { error: 'invalid credentials' };
+    return { authenticated: false, message: 'invalid credentials' };
   }
 
   // delete(id)
@@ -83,8 +89,9 @@ class Provider {
   static async delete(id) {
     console.log('deleting provider', id);
     const result = await db
-      .collection(COLLECTION)
-      .deleteOne({ _id: ObjectId(id) });
+      .db(DB_NAME)
+      .collection(COLL)
+      .deleteOne({ _id: new ObjectId(id) });
     if (result.deletedCount === 1)
       return { message: 'successfully deleted provider' };
     else return { message: 'error' };

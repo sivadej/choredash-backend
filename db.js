@@ -9,4 +9,4 @@ const client = new MongoClient(DB_URI, {
 client.connect();
 console.log('connecting to db:', DB_NAME);
 
-module.exports = client.db(DB_NAME);
+module.exports = client;

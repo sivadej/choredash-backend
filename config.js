@@ -10,7 +10,7 @@ let DB_NAME = 'choredash';
 if (process.env.NODE_ENV === "test") {
   DB_URI = "choredash-test";
 } else {
-  DB_URI  = process.env.DATABASE_URL || 'mongodb://localhost/choredash';
+  DB_URI  = process.env.DATABASE_URL || 'YOUR_DB_CONNECTION_STRING_HERE';
 }
 
 console.log('Using database', DB_URI);
