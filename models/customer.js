@@ -25,7 +25,8 @@ class Customer {
   static async addNew(customer) {
     // check for duplicate email address
     const duplicateCheck = await db
-      .collection(COLLECTION)
+      .db(DB_NAME)
+      .collection(COLL)
       .findOne({ email: customer.email });
     if (duplicateCheck !== null) return { message: 'email address in use' };
 
@@ -66,11 +67,11 @@ class Customer {
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid) {
         delete user.password; //do not return password in response
-        return user;
+        return { authenticated: true, user: user };
       }
     }
 
-    return { error: 'invalid credentials' };
+    return { authenticated: false, message: 'invalid credentials' };
   }
 
   // getById(id): Retrieve customer data by id

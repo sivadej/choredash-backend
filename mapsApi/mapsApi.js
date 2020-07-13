@@ -6,7 +6,6 @@ const { MAPS_API_KEY } = require('./apiConfig');
 const mapsClient = new Client({});
 
 class MapsAPI {
-
   static async getDistances(customerLocation, providerLocations) {
     console.log('mapsapi getdistances invoked');
     try {
@@ -42,7 +41,6 @@ class MapsAPI {
       console.log('error', err);
     }
   }
-
 }
 
 module.exports = MapsAPI;

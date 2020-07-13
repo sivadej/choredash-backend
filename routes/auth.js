@@ -8,8 +8,9 @@ const { SECRET } = require('./../config');
 // get a signed JWT from user data
 function createToken(user) {
   let payload = {
-    customer: 'yes',
-    test: 'testah',
+    id: user._id,
+    email: user.email,
+    type: user.type,
   };
   return jwt.sign(payload, SECRET);
 }
@@ -17,24 +18,38 @@ function createToken(user) {
 // authenticate email/password and get customer data
 // return signed token
 router.post('/customer/login', async (req, res, next) => {
-  console.log('invoked customer login', req.body);
-  const customer = await Customer.authenticate(req.body);
-  const token = createToken(customer);
-  return res.json(token);
+  console.log('invoked customer login');
+  try {
+    const customer = await Customer.authenticate(req.body);
+    if (customer.authenticated) {
+      const token = createToken({ ...customer.user, type: 'customer' });
+      return res.json({_token:token});
+    }
+    else return res.json({message: customer.message})
+  } catch (err) {
+    return next(err);
+  }
 });
 
 // authenticate email/password and get provider data
 // return signed token
 router.post('/provider/login', async (req, res, next) => {
-  console.log('invoked provider login', req.body);
-  const provider = await Provider.authenticate(req.body);
-  const token = createToken(provider);
-  return res.json(token);
+  console.log('invoked provider login');
+  try {
+    const provider = await Provider.authenticate(req.body);
+    if (provider.authenticated) {
+      const token = createToken({ ...provider.user, type: 'provider' });
+      return res.json({_token:token});
+    }
+    else return res.json({message: provider.message})
+  } catch (err) {
+    return next(err);
+  }
 });
 
-router.post('/customer/verify', async (req, res, next) => {
+router.post('/verify', async (req, res, next) => {
   try {
-    console.log('customer verify jwt invoked');
+    console.log('verify jwt invoked');
     const tokenStr = req.body._token || req.query._token;
     console.log('received login token', tokenStr);
     let token = jwt.verify(tokenStr, SECRET);
@@ -44,7 +59,5 @@ router.post('/customer/verify', async (req, res, next) => {
     return next(err);
   }
 });
-
-
 
 module.exports = router;
