@@ -9,6 +9,8 @@ const { SECRET } = require('./../config');
 function createToken(user) {
   let payload = {
     id: user._id,
+    firstName: user.first_name,
+    lastName: user.last_name,
     email: user.email,
     type: user.type,
   };
@@ -21,6 +23,7 @@ router.post('/customer/login', async (req, res, next) => {
   console.log('invoked customer login');
   try {
     const customer = await Customer.authenticate(req.body);
+    console.log(customer.user)
     if (customer.authenticated) {
       const token = createToken({ ...customer.user, type: 'customer' });
       return res.json({_token:token});
@@ -47,6 +50,7 @@ router.post('/provider/login', async (req, res, next) => {
   }
 });
 
+// get user info from login token
 router.post('/verify', async (req, res, next) => {
   try {
     console.log('verify jwt invoked');
