@@ -4,9 +4,15 @@ const { DB_NAME } = require('./../config');
 const COLL = 'chores';
 
 class Chore {
-  static async getAll() {
-    console.log('chore.getAll invoked');
-    const result = await db.db(DB_NAME).collection(COLL).find().toArray();
+  static async getItems(search) {
+    console.log('chore.getItems invoked', search);
+    let rgx = new RegExp(search, 'i');
+    const searchQuery = !search ? {} : { item: { $regex: rgx } };
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .find(searchQuery)
+      .toArray();
     return result;
   }
 

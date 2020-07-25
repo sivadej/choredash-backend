@@ -54,8 +54,7 @@ class Customer {
 
   // authenticate(data): return user on valid authentication
   // params: object { email, password }
-  static async authenticate(data) {
-    const { email, password } = data;
+  static async authenticate({email, password}) {
     // find user
     console.log('finding user for email', email);
     const user = await db
@@ -115,6 +114,15 @@ class Customer {
       return { message: 'successfully deleted user' };
     else return { message: 'error' };
   }
+
+  // getCart(userId)
+  static async getCart(userId) {
+    const user = await this.getById(userId);
+    return user.cart;
+  }
+
+
+  // updateCart
 }
 
 module.exports = Customer;

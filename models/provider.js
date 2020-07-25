@@ -64,8 +64,7 @@ class Provider {
 
   // authenticate(data): return user on valid authentication
   // params: object { email, password }
-  static async authenticate(data) {
-    const { email, password } = data;
+  static async authenticate({ email, password }) {
     // find user
     console.log('finding user for email', email);
     const user = await db

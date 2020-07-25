@@ -3,9 +3,9 @@ const router = express.Router();
 const Chore = require('./../models/chore');
 
 router.get('/', async (req,res,next)=>{
-  console.log('get customers using Class method');
+  console.log('get items ',req.query);
   try {
-    const response = await Chore.getAll();
+    const response = await Chore.getItems(req.query.search);
     return res.json(response);
   }
   catch (err) {

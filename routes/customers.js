@@ -57,10 +57,33 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 // POST /auth - authenticate user
-// params: object { email, password }
+// body params: object { email, password }
 router.post('/auth', async (req, res, next) => {
   try {
     const response = await Customer.authenticate(req.body);
+    return res.json(response);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /:id/cart
+// restrict to admin/currentid use only
+router.get('/:id/cart', async (req, res, next) => {
+  try {
+    const response = await Customer.getCart(req.params.id);
+    return res.json(response);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// PATCH /:id/cart - update cart
+// restrict to admin/currentid use only
+// body params: {cart: array[itemId, itemId...]}
+router.patch('/:id/cart', async (req, res, next) => {
+  try {
+    const response = await Customer.updateCart(req.params.id, req.body.cart);
     return res.json(response);
   } catch (err) {
     return next(err);
