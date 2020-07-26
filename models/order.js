@@ -5,6 +5,16 @@ const { ObjectId } = require('mongodb');
 const COLL = 'orders';
 
 class Order {
+  // get all orders
+  static async getAll() {
+    const result = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .find()
+    .toArray();
+  return result;
+  }
+
   // get all orders by userId (specify type)
   static async getAllById(userId, userType) {
     const result = await db
