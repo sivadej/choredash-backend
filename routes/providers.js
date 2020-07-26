@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Provider = require('./../models/provider');
+const Order = require('./../models/order');
 
 // GET / - get all providers
 // restrict to admin use only
@@ -61,5 +62,15 @@ router.post('/auth', async (req, res, next) => {
     return next(err);
   }
 });
+
+// GET /:id/orders
+router.get('/:id/orders', async (req,res,next)=>{
+  try {
+    const response = await Order.getAllById(req.params.id, 'provider');
+    return res.json(response);
+  } catch (err) {
+    return next(err);
+  }
+})
 
 module.exports = router;

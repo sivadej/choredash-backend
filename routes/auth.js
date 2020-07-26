@@ -56,9 +56,9 @@ router.post('/verify', async (req, res, next) => {
     console.log('verify jwt invoked');
     const tokenStr = req.body._token || req.query._token;
     console.log('received login token', tokenStr);
-    let token = jwt.verify(tokenStr, SECRET);
-    console.log('jwt token data', token);
-    return res.json(token);
+    let decodedToken = jwt.verify(tokenStr, SECRET);
+    console.log('jwt token data', decodedToken);
+    return res.json(decodedToken);
   } catch (err) {
     return next(err);
   }

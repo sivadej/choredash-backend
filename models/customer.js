@@ -65,7 +65,7 @@ class Customer {
     if (user) {
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid) {
-        delete user.password; //do not return password in response
+        delete user.password;
         return { authenticated: true, user: user };
       }
     }
