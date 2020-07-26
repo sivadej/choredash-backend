@@ -83,7 +83,11 @@ router.get('/:id/cart', async (req, res, next) => {
 // body params: {cart: array[itemId, itemId...]}
 router.patch('/:id/cart', async (req, res, next) => {
   try {
-    const response = await Customer.updateCart(req.params.id, req.body.cart);
+    const response = await Customer.updateCart(
+      req.params.id,
+      req.body.item,
+      req.body.action
+    );
     return res.json(response);
   } catch (err) {
     return next(err);

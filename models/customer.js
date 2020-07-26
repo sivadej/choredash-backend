@@ -54,7 +54,7 @@ class Customer {
 
   // authenticate(data): return user on valid authentication
   // params: object { email, password }
-  static async authenticate({email, password}) {
+  static async authenticate({ email, password }) {
     // find user
     console.log('finding user for email', email);
     const user = await db
@@ -96,7 +96,7 @@ class Customer {
       .db(DB_NAME)
       .collection(COLL)
       .updateOne({ _id: new ObjectId(id) }, { $set: { ...data } });
-    return result;
+    return result || { error: 'user not found' };
   }
 
   // updateOrders(id, data)
@@ -121,8 +121,34 @@ class Customer {
     return user.cart;
   }
 
-
   // updateCart
+  static async updateCart(userId, item, action) {
+    // get and make copy of user's current cart
+    const user = await this.getById(userId);
+    let currentCart = [...user.cart];
+
+    switch (action) {
+      case 'ADD':
+        currentCart.push(item);
+        break;
+      case 'REMOVE':
+        currentCart = currentCart.filter((i) => i.itemcode !== item.itemcode);
+        break;
+      default:
+        return { error: 'unrecognized cart action' };
+    }
+
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { cart: currentCart } }
+      );
+    console.log(result)
+    if (result.modifiedCount === 1) return { message: 'success' };
+    else return { message: 'error. no changes made to cart.' };
+  }
 }
 
 module.exports = Customer;
