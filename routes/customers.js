@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Customer = require('./../models/customer');
 const Order = require('./../models/order');
+const { adminRequired, ensureCorrectUser } = require('./../middleware/auth');
 
 // GET / - get all customers
 // restrict to admin use only
-router.get('/', async (req, res, next) => {
+router.get('/', adminRequired, async (req, res, next) => {
   try {
     const response = await Customer.getAll();
     return res.json(response);
@@ -16,7 +17,7 @@ router.get('/', async (req, res, next) => {
 
 // GET /id - get customer by id
 // restrict to admin/currentid use only
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Customer.getById(req.params.id);
     return res.json(response);
@@ -27,7 +28,7 @@ router.get('/:id', async (req, res, next) => {
 
 // PATCH /id - edit customer by id
 // restrict to admin/currentid use only
-router.patch('/:id', async (req, res, next) => {
+router.patch('/:id', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Customer.updateProfile(req.params.id, req.body);
     return res.json(response);
@@ -48,7 +49,7 @@ router.post('/', async (req, res, next) => {
 
 // DELETE: remove customer
 // restrict to admin/currentid use only
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Customer.delete(req.params.id);
     return res.json(response);
@@ -70,7 +71,7 @@ router.post('/auth', async (req, res, next) => {
 
 // GET /:id/cart
 // restrict to admin/currentid use only
-router.get('/:id/cart', async (req, res, next) => {
+router.get('/:id/cart', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Customer.getCart(req.params.id);
     return res.json(response);
@@ -82,7 +83,7 @@ router.get('/:id/cart', async (req, res, next) => {
 // PATCH /:id/cart - update cart
 // restrict to admin/currentid use only
 // body params: {cart: array[itemId, itemId...]}
-router.patch('/:id/cart', async (req, res, next) => {
+router.patch('/:id/cart', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Customer.updateCart(
       req.params.id,
@@ -96,7 +97,7 @@ router.patch('/:id/cart', async (req, res, next) => {
 });
 
 // GET /:id/orders
-router.get('/:id/orders', async (req,res,next)=>{
+router.get('/:id/orders', ensureCorrectUser, async (req,res,next)=>{
   try {
     const response = await Order.getAllById(req.params.id, 'customer');
     return res.json(response);

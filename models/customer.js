@@ -86,17 +86,22 @@ class Customer {
   }
 
   // updateProfile(data)
-  //
   // Return: {}
   static async updateProfile(id, data) {
     console.log('updating user..', id, data);
     // TODO: check if valid user before performing update.
     // return confirmation of update
+    delete data._token;
+    
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
       .updateOne({ _id: new ObjectId(id) }, { $set: { ...data } });
-    return result || { error: 'user not found' };
+
+    if (result.result.ok) {
+      return data;
+    }
+    else return { error: 'user not found' };
   }
 
   // updateOrders(id, data)
@@ -124,15 +129,15 @@ class Customer {
   // updateCart
   static async updateCart(userId, item, action) {
     // get and make copy of user's current cart
-    const user = await this.getById(userId);
-    let currentCart = [...user.cart];
+    const currentCart = await this.getCart(userId);
+    let newCart = [];
 
     switch (action) {
       case 'ADD':
-        currentCart.push(item);
+        newCart = [...currentCart, item];
         break;
       case 'REMOVE':
-        currentCart = currentCart.filter((i) => i.itemcode !== item.itemcode);
+        newCart = currentCart.filter((i) => i.item_code !== item.item_code);
         break;
       default:
         return { error: 'unrecognized cart action' };
@@ -143,10 +148,10 @@ class Customer {
       .collection(COLL)
       .updateOne(
         { _id: new ObjectId(userId) },
-        { $set: { cart: currentCart } }
+        { $set: { cart: newCart } }
       );
-    console.log(result)
-    if (result.modifiedCount === 1) return { message: 'success' };
+ 
+    if (result.modifiedCount === 1) return newCart;
     else return { message: 'error. no changes made to cart.' };
   }
 }
