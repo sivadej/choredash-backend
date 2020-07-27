@@ -1,13 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { SECRET } = require('../config');
 
+// authorizes request from any VALID token
 function authRequired(req, res, next) {
   try {
-    console.log('trying to auth')
-    const tokenStr = req.body._token || req.query._token;
-    let token = jwt.verify(tokenStr, SECRET);
-    //req.username = token.username;
-    //console.log(token)
+    const token = req.body._token || req.query._token;
+    jwt.verify(token, SECRET);
     return next();
   } catch (err) {
     let unauthorized = new Error('You must authenticate first.');
@@ -16,42 +14,30 @@ function authRequired(req, res, next) {
   }
 }
 
+// authorizes request where decoded token user type is 'admin'
 function adminRequired(req, res, next) {
   try {
-    const tokenStr = req.body._token;
-
-    let token = jwt.verify(tokenStr, SECRET);
-    req.username = token.username;
-
-    if (token.is_admin) {
-      return next();
-    }
-
-    throw new Error();
+    const token = req.body._token;
+    let decoded = jwt.verify(token, SECRET);
+    if (decoded.is_admin === true) return next();
+    else throw new Error();
   } catch (err) {
-    const unauthorized = new Error('You must be an admin to access.');
+    const unauthorized = new Error('Unauthorized user. Admin required.');
     unauthorized.status = 401;
-
     return next(unauthorized);
   }
 }
 
+// authorizes request where decoded token id === params id
 function ensureCorrectUser(req, res, next) {
   try {
-    const tokenStr = req.body._token || req.query._token;
-
-    let token = jwt.verify(tokenStr, SECRET);
-    req.username = token.username;
-
-    if (token.username === req.params.username) {
-      return next();
-    }
-
-    throw new Error();
+    const token = req.body._token || req.query._token;
+    let decoded = jwt.verify(token, SECRET);
+    if (req.params.id === decoded.id) return next();
+    else throw new Error();
   } catch (e) {
-    const unauthorized = new Error('You are not authorized.');
+    const unauthorized = new Error('Unauthorized user.');
     unauthorized.status = 401;
-
     return next(unauthorized);
   }
 }
