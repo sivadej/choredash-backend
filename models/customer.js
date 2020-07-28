@@ -126,6 +126,18 @@ class Customer {
     return user.cart;
   }
 
+  static async clearCart(userId) {
+    const result = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .updateOne({ _id: new ObjectId(userId) }, { $set: { cart: [] } });
+
+  if (result.result.ok) {
+    return;
+  }
+  else return { message: 'error' };
+  }
+
   // updateCart
   static async updateCart(userId, item, action) {
     // get and make copy of user's current cart

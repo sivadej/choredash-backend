@@ -101,10 +101,24 @@ router.patch('/:id/cart', ensureCorrectUser, async (req, res, next) => {
 router.post('/:id/cart/checkout', ensureCorrectUser, async (req,res,next)=>{
   try{
     console.log('finalizing checkout for customer',req.params.id)
-    // get cust cart, send to order checkout, return order id number
-    // on order success, clear customer cart (don't delete cart if order creation fails!)
-    //const response = await Order.checkout(req.params.id)
-    return res.json({message:'checkout success. order number 123', success:true, orderId:123});
+
+    // get cust cart, send to new order, return orderid details
+    const cartResponse = await Customer.getCart(req.params.id);
+    if (cartResponse.length > 0) {
+      const orderResponse = await Order.createNew(req.params.id, cartResponse);
+
+      // on order success, clear customer cart (don't delete cart if order creation fails!)
+      if (orderResponse.status === 'created') {
+        await Customer.clearCart(req.params.id);
+        return res.json({
+          success: true, 
+          orderId: orderResponse._id,
+          data: orderResponse,
+        });
+      }
+    }
+
+    return res.json({message: 'checkout failed'});
   } catch (err) {
     return next(err);
   }

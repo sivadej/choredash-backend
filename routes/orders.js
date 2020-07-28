@@ -16,7 +16,7 @@ router.get('/', adminRequired, async (req,res,next)=>{
 
 // get order by id number
 // accessible only by customer or provider
-router.get('/:orderId', ensureCorrectUser, async (req,res,next)=>{
+router.get('/:orderId', async (req,res,next)=>{
   try {
     const response = await Order.getDetails(req.params.orderId);
     return res.json(response);

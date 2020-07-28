@@ -34,7 +34,29 @@ class Order {
     return result;
   }
 
-  static async createNew(userId, data) {
+  // create new order
+  static async createNew(custId, cartData) {
+    console.log('creating order for', custId)
+    console.log('with cart items:', cartData.length)
+
+    //create doc with cart items and customer_id
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .insertOne({
+        customer_id: custId,
+        items: cartData,
+        date_created: new Date(Date.now()),
+        provider_id: null,
+        order_total: 0,
+        est_travel_time: null,
+        status: 'created',
+      });
+    
+    if (result.insertedCount === 1) {
+      console.log('order inserted!', result.insertedId);
+      return result.ops[0];
+    }
     return;
   }
 
