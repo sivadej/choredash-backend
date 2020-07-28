@@ -9,12 +9,12 @@ function authRequired(req, res, next) {
     return next();
   } catch (err) {
     let unauthorized = new Error('You must authenticate first.');
-    unauthorized.status = 401; // 401 Unauthorized
+    unauthorized.status = 401;
     return next(unauthorized);
   }
 }
 
-// authorizes request where decoded token user type is 'admin'
+// authorizes request where decoded token user is admin
 function adminRequired(req, res, next) {
   try {
     const token = req.body._token;

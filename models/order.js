@@ -5,14 +5,14 @@ const { ObjectId } = require('mongodb');
 const COLL = 'orders';
 
 class Order {
-  // get all orders
+  // get all order data
   static async getAll() {
     const result = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .find()
-    .toArray();
-  return result;
+      .db(DB_NAME)
+      .collection(COLL)
+      .find()
+      .toArray();
+    return result;
   }
 
   // get all orders by userId (specify type)
@@ -32,6 +32,10 @@ class Order {
       .collection(COLL)
       .findOne({ _id: new ObjectId(orderId) });
     return result;
+  }
+
+  static async createNew(userId, data) {
+    return;
   }
 
   // update order status

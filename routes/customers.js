@@ -96,6 +96,20 @@ router.patch('/:id/cart', ensureCorrectUser, async (req, res, next) => {
   }
 });
 
+// POST /:id/cart/checkout - customer order checkout
+// 
+router.post('/:id/cart/checkout', ensureCorrectUser, async (req,res,next)=>{
+  try{
+    console.log('finalizing checkout for customer',req.params.id)
+    // get cust cart, send to order checkout, return order id number
+    // on order success, clear customer cart (don't delete cart if order creation fails!)
+    //const response = await Order.checkout(req.params.id)
+    return res.json({message:'checkout success. order number 123', success:true, orderId:123});
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // GET /:id/orders
 router.get('/:id/orders', ensureCorrectUser, async (req,res,next)=>{
   try {
