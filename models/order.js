@@ -61,6 +61,10 @@ class Order {
   }
 
   // update order status
+  static async updateStatus(orderId) {
+    console.log('updating order status')
+    return 'updating order status...';
+  }
 }
 
 module.exports = Order;

@@ -16,9 +16,9 @@ router.get('/', adminRequired, async (req,res,next)=>{
 
 // get order by id number
 // accessible only by customer or provider
-router.get('/:orderId', async (req,res,next)=>{
+router.get('/:id', async (req,res,next)=>{
   try {
-    const response = await Order.getDetails(req.params.orderId);
+    const response = await Order.getDetails(req.params.id);
     return res.json(response);
   }
   catch (err) {
@@ -31,6 +31,17 @@ router.get('/:orderId', async (req,res,next)=>{
 router.post('/', async (req,res,next)=>{
   try {
     const response = await Order.createNew(userId, orderData);
+    return res.json(response);
+  }
+  catch (err) {
+    return next(err);
+  }
+});
+
+// update order status
+router.patch('/:id', async (req,res,next)=>{
+  try {
+    const response = await Order.updateStatus(req.params.id);
     return res.json(response);
   }
   catch (err) {
