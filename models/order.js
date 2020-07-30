@@ -67,17 +67,23 @@ class Order {
   }
 
   // update order status
-  static async updateStatus(orderId) {
-    console.log('updating order status')
-    return 'updating order status...';
+  static async updateStatus(orderId, key, data) {
+    console.log('updating order status');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(orderId) }, {$set:{[key]:data}});
+    return result;
   }
 
   static async assignProviders(orderId, custLoc) {
-    console.log('assigning providers for order', orderId);
-    console.log('for customer located at', custLoc);
+    console.log('finding nearby providers for order', orderId);
     const providerFinder = new ProviderFinder(orderId, custLoc);
     const matches = await providerFinder.getMatches();
-    console.log('found nearby matches!', matches);
+    console.log('saving matches to db...', matches)
+    const updateResult = await this.updateStatus(orderId, 'provider_matches', matches);
+    if (updateResult.modifiedCount === 1) return 'ok';
+    else return 'error';
   }
 }
 

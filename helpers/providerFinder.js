@@ -15,6 +15,7 @@ const db = require('./../db');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
+//const Order = require('./../models/Order');
 
 const MATCH_LIMIT = 10;
 
@@ -23,18 +24,18 @@ const milesToMeters = (mi) => {
 };
 
 class ProviderFinder {
-
   constructor(orderId, customerLoc) {
     this.providerStack = [];
+    this.providerLocs = [];
     this.customerLoc = customerLoc;
     this.orderId = orderId;
-    console.log('providerfinder instantiated');
   }
-  
+
   getMatches = async (radiusMiles = 10) => {
     console.log('returning all matches');
     console.log('customer loc', this.customerLoc);
     const { lat, lng } = this.customerLoc;
+
     const result = await db
       .db(DB_NAME)
       .collection('providers')
@@ -48,29 +49,49 @@ class ProviderFinder {
         },
       })
       .toArray();
+
     if (result.length > 0) {
-      this.providerStack.push(result);
+      console.log(`found ${result.length} nearby providers:`);
+      this.providerLocs = result.map((p) => [p.location[1], p.location[0]]); //[lat,lng] array for googlemaps api
+      result.forEach((p) => {
+        this.providerStack.push({
+          id: p._id,
+          location: p.location,
+        });
+      });
+      await this.insertDrivingDistances();
+      this.sortMatches();
       return this.providerStack;
-    }
-    else return 'no nearby matches found. increase your search radius.';
+    } else return 'no nearby matches found. increase your search radius.';
   };
 
-  static async pushProvider(id, stack) {
-    // this.updateStack()
-    return;
-  }
+  // use googlemaps api to calculate driving distance.
+  // insert into provider's object in stack.
+  insertDrivingDistances = async () => {
+    console.log('getting driving times from Google Maps...');
+    const distanceResult = await MapsApi.getDistances(
+      [this.customerLoc],
+      this.providerLocs
+    );
+    if (
+      distanceResult.status === 'OK' &&
+      distanceResult.rows.length === this.providerStack.length
+    ) {
+      this.providerStack.forEach((p, idx) => {
+        p['duration_value'] =
+          distanceResult.rows[idx].elements[0].duration.value;
+        p['duration_text'] = distanceResult.rows[idx].elements[0].duration.text;
+      });
+      return;
+    } else return 'error';
+  };
 
-  static async popProvider(id, stack) {
-    // this.updateStack()
-    return;
-  }
+  sortMatches = () => {
+    console.log('sorting stack by shortest driving time last');
+    return (this.providerStack).sort((a,b)=>b.duration_value - a.duration_value);
+  };
 
-  static async updateStack(orderId, stack) {
-    // perform db update
-    return;
-  }
-
-  static async notifyProvider(id) {
+  static async notifyNextProvider(id) {
     // update db.provider.accept_pending with orderId
     // await Order.updateStatus
     // const [providerRes, orderRes] = await Promise.all([Provider.acceptPending, Order.updateStatus])
