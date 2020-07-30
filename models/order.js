@@ -60,7 +60,7 @@ class Order {
       .insertOne({
         customer_id: custId,
         customer_address: customer.address,
-        customer_location: customer.current_location,
+        customer_location: customer.location,
         items: cartData,
         date_created: new Date(Date.now()),
         provider_id: null,
@@ -72,7 +72,7 @@ class Order {
     // confirm successful db operation, then look for providers
     if (result.insertedCount === 1) {
       console.log('order inserted!', result.insertedId);
-      await this.assignProviders(result.insertedId, customer.current_location);
+      await this.assignProviders(result.insertedId, customer.location);
       return result.ops[0];
     }
     return;
@@ -81,14 +81,38 @@ class Order {
   // call ProviderFinder class to perform distance calculations.
   // store sorted array (provider stack) into database
   static async assignProviders(orderId, custLoc) {
-    console.log('finding nearby providers for order', orderId);
+    console.log('finding nearby providers for order:', orderId);
+
     const providerFinder = new ProviderFinder(orderId, custLoc);
     const matches = await providerFinder.getMatches();
-    console.log('saving matches to db...', matches)
+    
     const updateResult = await this.updateStatus(orderId, 'provider_matches', matches);
     if (updateResult.modifiedCount !== 1) return 'error';
-    const assignedProvider = await providerFinder.notifyProviderLoop();
+    
+    const assignedProvider = providerFinder.notifyProviderLoop();
     return assignedProvider;
+  }
+
+  static async setStatus() {
+    return 'set status';
+  }
+
+  static async accepted(orderId, providerId) {
+    console.log('updating order as accepted');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(orderId) }, {$set:{status:'accepted', provider_id:providerId, provider_matches:[]}});
+    return result;
+  }
+
+  static async rejected(orderId) {
+    console.log('updating order as rejected');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(orderId) }, {$set:{status:'searching', provider_id:null }});
+    return result;
   }
 
 

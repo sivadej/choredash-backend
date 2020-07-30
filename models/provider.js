@@ -27,7 +27,7 @@ class Provider {
   // addNew(data): Registers new provider
   // Input body { email, first_name, last_name, password,
   //              address:{ line1, line2, city, state, zip },
-  //              current_location: { lat, lng },
+  //              location: [lng, lag],
   //              orders: [] //array of orders by orderId
   //             }
   // call function getOne() using newly generated cust id -> return body?
@@ -54,8 +54,7 @@ class Provider {
     const custObj = {
       ...provider,
       password: hashedPassword,
-      current_location: coords,
-      orders: [],
+      location: [coords.lng, coords.lat],
     };
     const result = await db.db(DB_NAME).collection(COLL).insertOne(custObj);
 
@@ -111,27 +110,57 @@ class Provider {
     //else return { message: 'error' };
   }
 
-  static async setOrderStatus(id, orderId, status) {
-    console.log('setting status');
+  static async acceptOrder(id){
+    console.log('updating provider for order acceptance')
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne({ _id: new ObjectId(id) }, { $set: {status, accept_pending:orderId}});
-    //if (result.updatedCount === 1)
-      return result;
-    //else return { message: 'error' };
+      .updateOne({ _id: new ObjectId(id) }, { $set: {status: 'accepted', available: false}});
+    return result;
   }
 
-  static async getStatus(id, orderId) {
+  static async rejectOrder(id){
+    console.log('updating provider for order rejection')
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(id) }, { $set: {status: 'rejected', current_order: null}});
+    return result;
+  }
+
+  static async setOrderStatus(id, orderId, status) {
+    console.log('temp assigning order to provider');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(id), available: true }, { $set: {status, current_order:orderId}});
+    if (result.modifiedCount === 1) {
+      return result;
+    }
+    else return null;
+  }
+
+  static async resetStatus(id) {
+    console.log('resetting status');
+    const result = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .updateOne({ _id: new ObjectId(id) }, { $set: {status:null, current_order:null}});
+  if (result.modifiedCount === 1) {
+    return result;
+  }
+  else return null;
+  }
+
+  static async getStatus(id) {
     console.log('getting status');
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .findOne({ _id: new ObjectId(id) });
-    //if (result.updatedCount === 1)
-      return result.status;
-    //else return { message: 'error' };
-  
+      .findOne({ _id: new ObjectId(id), available: true });
+    console.log(result);
+    if (result === null) return null;
+    return result.status;
   }
 }
 

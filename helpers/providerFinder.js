@@ -34,10 +34,9 @@ class ProviderFinder {
     this.currentMatch;
   }
 
-  getMatches = async (radiusMiles = 10) => {
+  getMatches = async (radiusMiles = 15) => {
     console.log('returning all matches');
     console.log('customer loc', this.customerLoc);
-    const { lat, lng } = this.customerLoc;
 
     const result = await db
       .db(DB_NAME)
@@ -45,7 +44,7 @@ class ProviderFinder {
       .find({
         location: {
           $near: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
+            $geometry: { type: 'Point', coordinates: this.customerLoc },
             $maxDistance: milesToMeters(radiusMiles),
             $minDistance: 0,
           },
@@ -71,9 +70,9 @@ class ProviderFinder {
   // use googlemaps api to calculate driving distance.
   // insert into provider's object in stack.
   insertDrivingDistances = async () => {
-    console.log('getting driving times from Google Maps...');
+    console.log('getting driving times from Google Maps...', this.providerLocs, this.customerLoc);
     const distanceResult = await MapsApi.getDistances(
-      [this.customerLoc],
+      [[this.customerLoc[1],this.customerLoc[0]]],
       this.providerLocs
     );
     if (
@@ -96,32 +95,40 @@ class ProviderFinder {
 
   notifyProviderLoop = async () => {
     console.log('notifying providers...')
+    if (this.providerStack.length === 0) return;
   
     // set the current match by popping from the stack
     this.currentMatch = this.providerStack.pop();
+    if (!this.currentMatch) return;
 
-    // call function to assign status to current providerId
-    await Provider.setPendingOrder(this.currentMatch.id, JSON.stringify(this.orderId), 'waiting');
+    // call function to assign 'waiting' status to current providerId
+    // only assign current_order property if provider is available
+    let res = await Provider.setOrderStatus(this.currentMatch.id, this.orderId.toString(), 'waiting');
+    if (res === null) return this.notifyProviderLoop();
     
     // perform status check every 5 seconds for 1 minute
     for (let i=0; i<12; i++) {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      let status = await Provider.getStatus(this.currentMatch.id, this.orderId);
+      let status = await Provider.getStatus(this.currentMatch.id);
+      if (status === null) return this.notifyProviderLoop();
       // accepted ? move on to active status
       if (status === 'accepted') {
-        console.log('yay! matched provider has accepted!')
-        //todo: perform db operations to clean up provider status
-        break;
+        console.log('hooray! matched provider has accepted!')
+        return;
       }
       // rejected ? notify next provider
       if (status === 'rejected') {
-        console.log('matched provider has rejected the order... on to the next one...')
-        //todo: perform db operations to clean up provider status
+        console.log('order rejected by this match... on to the next one...')
+        await Provider.resetStatus(this.currentMatch.id);
         return this.notifyProviderLoop();
       }
+      // currently set to unavailable ? next...
+      if (status === 'unavailable') {
+        console.log('matched but currently unavailable... skipping...')
+        return this.notifyProviderLoop();
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
       // time out ? end loop
     }
-    //todo: perform db operations to clean up provider status
     if (this.providerStack.length) return this.notifyProviderLoop();
 
     // entire stack has been exhausted, no further matches.

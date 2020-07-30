@@ -17,7 +17,7 @@ class Customer {
   // addNew(data): Registers new user
   // Input body { email, first_name, last_name, password,
   //              address:{ line1, line2, city, state, zip },
-  //              current_location: { lat, lng },
+  //              location: [lng, lat],
   //              orders: [] //array of orders by orderId
   //             }
   // call function getOne() using newly generated cust id -> return body?
@@ -44,8 +44,8 @@ class Customer {
     const custObj = {
       ...customer,
       password: hashedPassword,
-      current_location: coords,
-      orders: [],
+      location: [coords.lng, coords.lat],
+      cart: [],
     };
     const result = await db.db(DB_NAME).collection(COLL).insertOne(custObj);
 
@@ -75,7 +75,7 @@ class Customer {
 
   // getById(id): Retrieve customer data by id
   // Return: { _id, email, first_name, last_name, address,
-  //           current_location, orders }
+  //           location[lng,lat], orders }
   static async getById(id) {
     console.log('getting by id', id);
     const result = await db
