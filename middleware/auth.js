@@ -33,7 +33,7 @@ function ensureCorrectUser(req, res, next) {
   try {
     const token = req.body._token || req.query._token;
     let decoded = jwt.verify(token, SECRET);
-    if (req.params.id === decoded.id) return next();
+    if (req.params.id === decoded.id || decoded.is_admin === true) return next();
     else throw new Error();
   } catch (e) {
     const unauthorized = new Error('Unauthorized user.');

@@ -109,7 +109,7 @@ router.post('/:id/cart/checkout', ensureCorrectUser, async (req,res,next)=>{
 
       // on order success, clear customer cart (don't delete cart if order creation fails!)
       // begin provider seach process
-      if (orderResponse.status === 'created') {
+      if (orderResponse.status === 'searching') {
         await Customer.clearCart(req.params.id);
         return res.json({
           success: true, 

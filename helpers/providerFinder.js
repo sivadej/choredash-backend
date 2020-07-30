@@ -2,18 +2,6 @@
 // once a new order is created, perform a search for
 // nearest available providers, given coordinates
 // of customer and search params
-const db = require('../db');
-const MapsApi = require('./../mapsApi/mapsApi');
-const { ObjectId } = require('mongodb');
-const { DB_NAME } = require('./../config');
-
-// utilize mongodb geospacial queries to limit search range
-const SEARCH_RANGE_IN_MI = 20;
-// create queue of best matches.
-const MATCH_LIMIT = 10;
-
-// insert array of providerIDs into db orderid
-const providerStack = [];
 
 // perform googlemaps distancematrix request to obtain
 // driving time estimations
@@ -23,24 +11,49 @@ const providerStack = [];
 // (keep all providers regardless of availability in queue because
 // their status may change during the search process)
 
+const db = require('./../db');
+const MapsApi = require('./../mapsApi/mapsApi');
+const { ObjectId } = require('mongodb');
+const { DB_NAME } = require('./../config');
+
+const MATCH_LIMIT = 10;
+
+const milesToMeters = (mi) => {
+  return +mi * 1609.39;
+};
+
 class ProviderFinder {
 
-  static async getNearest(custCoords, maxDist) {
-    // provider db query params - coord distance, availability
-    // pass in customer coordinates
-    const result = await db.providers.find({
-      current_location: {
-        $near: { $geometry: { type: 'Point', coordinates: [-1.11, 1.11] }},
-        $minDistance: 0,
-        $maxDistance: 5000,
-      }
-    })
-
-    // for each result, push to stack
-
-    // maintain stack in db as array in orderId
-
+  constructor(orderId, customerLoc) {
+    this.providerStack = [];
+    this.customerLoc = customerLoc;
+    this.orderId = orderId;
+    console.log('providerfinder instantiated');
   }
+  
+  getMatches = async (radiusMiles = 10) => {
+    console.log('returning all matches');
+    console.log('customer loc', this.customerLoc);
+    const { lat, lng } = this.customerLoc;
+    const result = await db
+      .db(DB_NAME)
+      .collection('providers')
+      .find({
+        location: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: [lng, lat] },
+            $maxDistance: milesToMeters(radiusMiles),
+            $minDistance: 0,
+          },
+        },
+      })
+      .toArray();
+    if (result.length > 0) {
+      this.providerStack.push(result);
+      return this.providerStack;
+    }
+    else return 'no nearby matches found. increase your search radius.';
+  };
 
   static async pushProvider(id, stack) {
     // this.updateStack()
@@ -67,7 +80,6 @@ class ProviderFinder {
   static async updateCustomerStatus(custId, orderId) {
     return;
   }
-
 }
 
 module.exports = ProviderFinder;

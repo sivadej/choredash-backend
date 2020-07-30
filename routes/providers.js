@@ -16,7 +16,7 @@ router.get('/', adminRequired, async (req, res, next) => {
 });
 
 // GET /id - get provider by id
-router.get('/:id', ensureCorrectUser, async (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const response = await Provider.getById(req.params.id);
     return res.json(response);
