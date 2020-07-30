@@ -100,7 +100,39 @@ class Provider {
   static async updateLocation() {}
 
   // update provider's availability
-  static async updateAvailability() {}
+  static async updateAvailability(avail) {
+    console.log('setting availability');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(id) }, { $set: {available: avail}});
+    //if (result.updatedCount === 1)
+      return result;
+    //else return { message: 'error' };
+  }
+
+  static async setOrderStatus(id, orderId, status) {
+    console.log('setting status');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(id) }, { $set: {status, accept_pending:orderId}});
+    //if (result.updatedCount === 1)
+      return result;
+    //else return { message: 'error' };
+  }
+
+  static async getStatus(id, orderId) {
+    console.log('getting status');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ _id: new ObjectId(id) });
+    //if (result.updatedCount === 1)
+      return result.status;
+    //else return { message: 'error' };
+  
+  }
 }
 
 module.exports = Provider;

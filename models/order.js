@@ -36,13 +36,24 @@ class Order {
     return result;
   }
 
+  // update order status
+  static async updateStatus(orderId, key, data) {
+    console.log('updating order status');
+    const result = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(orderId) }, {$set:{[key]:data}});
+    return result;
+  }
+
   // create new order
+  // immediately begin search for provider match
   static async createNew(custId, cartData) {
     console.log('creating order for', custId)
     const customer = await Customer.getById(custId);
     console.log('with cart items:', cartData.length)
 
-    //create doc with cart items and customer_id
+    // create db order with cart items and customer_id
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
@@ -58,33 +69,29 @@ class Order {
         status: 'searching',
       });
     
+    // confirm successful db operation, then look for providers
     if (result.insertedCount === 1) {
       console.log('order inserted!', result.insertedId);
-      this.assignProviders(result.insertedId, customer.current_location);
+      await this.assignProviders(result.insertedId, customer.current_location);
       return result.ops[0];
     }
     return;
   }
 
-  // update order status
-  static async updateStatus(orderId, key, data) {
-    console.log('updating order status');
-    const result = await db
-      .db(DB_NAME)
-      .collection(COLL)
-      .updateOne({ _id: new ObjectId(orderId) }, {$set:{[key]:data}});
-    return result;
-  }
-
+  // call ProviderFinder class to perform distance calculations.
+  // store sorted array (provider stack) into database
   static async assignProviders(orderId, custLoc) {
     console.log('finding nearby providers for order', orderId);
     const providerFinder = new ProviderFinder(orderId, custLoc);
     const matches = await providerFinder.getMatches();
     console.log('saving matches to db...', matches)
     const updateResult = await this.updateStatus(orderId, 'provider_matches', matches);
-    if (updateResult.modifiedCount === 1) return 'ok';
-    else return 'error';
+    if (updateResult.modifiedCount !== 1) return 'error';
+    const assignedProvider = await providerFinder.notifyProviderLoop();
+    return assignedProvider;
   }
+
+
 }
 
 module.exports = Order;

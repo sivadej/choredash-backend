@@ -15,7 +15,9 @@ const db = require('./../db');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
-//const Order = require('./../models/Order');
+const Order = require('./../models/Order');
+const Provider = require('./../models/Provider');
+const { setStatus } = require('./../models/Provider');
 
 const MATCH_LIMIT = 10;
 
@@ -29,6 +31,7 @@ class ProviderFinder {
     this.providerLocs = [];
     this.customerLoc = customerLoc;
     this.orderId = orderId;
+    this.currentMatch;
   }
 
   getMatches = async (radiusMiles = 10) => {
@@ -91,16 +94,41 @@ class ProviderFinder {
     return (this.providerStack).sort((a,b)=>b.duration_value - a.duration_value);
   };
 
-  static async notifyNextProvider(id) {
-    // update db.provider.accept_pending with orderId
-    // await Order.updateStatus
-    // const [providerRes, orderRes] = await Promise.all([Provider.acceptPending, Order.updateStatus])
-    return;
+  notifyProviderLoop = async () => {
+    console.log('notifying providers...')
+  
+    // set the current match by popping from the stack
+    this.currentMatch = this.providerStack.pop();
+
+    // call function to assign status to current providerId
+    await Provider.setPendingOrder(this.currentMatch.id, JSON.stringify(this.orderId), 'waiting');
+    
+    // perform status check every 5 seconds for 1 minute
+    for (let i=0; i<12; i++) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      let status = await Provider.getStatus(this.currentMatch.id, this.orderId);
+      // accepted ? move on to active status
+      if (status === 'accepted') {
+        console.log('yay! matched provider has accepted!')
+        //todo: perform db operations to clean up provider status
+        break;
+      }
+      // rejected ? notify next provider
+      if (status === 'rejected') {
+        console.log('matched provider has rejected the order... on to the next one...')
+        //todo: perform db operations to clean up provider status
+        return this.notifyProviderLoop();
+      }
+      // time out ? end loop
+    }
+    //todo: perform db operations to clean up provider status
+    if (this.providerStack.length) return this.notifyProviderLoop();
+
+    // entire stack has been exhausted, no further matches.
+    // suggest searching with larger map radius
+    return console.log('no providers available');
   }
 
-  static async updateCustomerStatus(custId, orderId) {
-    return;
-  }
 }
 
 module.exports = ProviderFinder;
