@@ -134,12 +134,11 @@ class Provider {
   }
 
   static async setOrderStatus(id, orderId, status) {
-    console.log('temp assigning order to provider');
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
       .updateOne(
-        { _id: new ObjectId(id), available: true },
+        { _id: new ObjectId(id) },
         { $set: { status, current_order: orderId } }
       );
     if (result.modifiedCount === 1) {
