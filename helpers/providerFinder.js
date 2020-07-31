@@ -12,10 +12,10 @@ const db = require('./../db');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { DB_NAME } = require('./../config');
 
-const Provider = require('./../models/provider')
+const Provider = require('./../models/provider');
 
-const NUMBER_OF_STATUS_RETRIES = 5;
-const STATUS_CHECK_DELAY_IN_MS = 500;
+const NUMBER_OF_STATUS_RETRIES = 10;
+const STATUS_CHECK_DELAY_IN_MS = 1000;
 const DEFAULT_SEARCH_RADIUS_MI = 15;
 
 const milesToMeters = (mi) => {
@@ -100,11 +100,10 @@ class ProviderFinder {
   // recursively pop stack of potential matches to notify each provider
   static async notifyMatches(providerStack, orderId) {
     console.log('notifyMatches() invoked for orderId', orderId);
+    let orderIdString = orderId.toString();
 
     // recursion base case
-    if (providerStack.length === 0) return console.log('did not find any available or accepted providers');
-    
-    let orderIdString = orderId.toString();
+    if (providerStack.length === 0) return this.handleNoMatchesFound(orderIdString);
 
     // set the current match by popping from the stack
     let currentMatch = providerStack.pop();
@@ -153,6 +152,11 @@ class ProviderFinder {
     console.log('handling stuff for match found..')
     await Provider.handleMatchFound(providerData, orderId);
     return;
+  }
+
+  static async handleNoMatchesFound(orderId) {
+    console.log('did not find any available or accepted providers', orderId);
+    await Provider.handleNoMatchFound(orderId);
   }
 
 }

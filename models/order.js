@@ -34,7 +34,7 @@ class Order {
 
   // update order status
   static async updateStatus(orderId, key, data) {
-    console.log('updating order status');
+    console.log(`updating order status ${orderId} ${key}:${data}`);
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
@@ -95,15 +95,14 @@ class Order {
     if (!matches) return console.log('no providers found');
     console.log('returned matches', matches);
 
-    const updateResult = await this.updateStatus(
+    const updateResponse = await this.updateStatus(
       orderId,
       'provider_matches',
       matches
     );
-    if (updateResult.modifiedCount !== 1) return 'error';
+    if (updateResponse.modifiedCount !== 1) return 'error';
 
     const assignedProvider = ProviderFinder.notifyMatches(matches, orderId);
-    //console.log('assigned provider? ', assignedProvider)
     return assignedProvider;
   }
 
@@ -137,34 +136,23 @@ class Order {
     return result;
   }
 
-  static async isCustomerConfirmed(orderId) {
-    console.log('checking if customer has confirmed completion:', orderId);
-    const orderResult = await db
-      .db(DB_NAME)
-      .collection(COLL)
-      .findOne({ _id: new ObjectId(orderId) });
-    if (orderResult.status === 'customer_confirmed') return true;
-    else return false;
-  }
-
   // closeOrder(): finalize order, reset provider status
   static async closeOrder(orderId) {
     console.log('closing order', orderId);
 
     // in db: set order.status to 'completed'
-    const orderUpdateResult = await db
+    const orderUpdateRes = await db
       .db(DB_NAME)
       .collection(COLL)
       .findOneAndUpdate(
-        { _id: new ObjectId(orderId) },
+        { _id: new ObjectId(orderId), status: 'order_in_progress' },
         { $set: { status: 'completed' } }
       );
-    console.log(orderUpdateResult);
-
-    // retrieve providerId from order update query
-    // set provider availability to true
-    // set provider current order to null
-    const providerId = orderUpdateResult.value.provider_id;
+    console.log('update db result',orderUpdateRes);
+    if (orderUpdateRes.value === null) return { message: 'cannot update order status.' }
+    
+    // clear provider current order info, availability, status
+    const providerId = orderUpdateRes.value.provider_id;
     const provUpdateResult = await db
       .db(DB_NAME)
       .collection('providers')

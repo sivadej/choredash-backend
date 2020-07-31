@@ -103,8 +103,6 @@ class Customer {
     } else return { error: 'user not found' };
   }
 
-  // updateOrders(id, data)
-  // Return: {}
 
   // deleteCustomer(id, password)
   // Return: { message }
@@ -162,53 +160,6 @@ class Customer {
     else return { message: 'error. no changes made to cart.' };
   }
 
-  // confirmCompletion(): set statuses of order on customer end
-  static async confirmCompletion(orderId) {
-  // get order status from order db
-  const orderResult = await db
-    .db(DB_NAME)
-    .collection('orders')
-    .findOne({ _id: new ObjectId(orderId) });
-
-  let newStatus;
-  if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_provider_confirm';
-  else if (orderResult.status === 'awaiting_customer_confirm') newStatus = 'completed';
-  else newStatus = orderResult.status;
-
-  await db
-      .db(DB_NAME)
-      .collection('orders')
-      .updateOne(
-        { _id: new ObjectId(orderId) },
-        { $set:{ status: newStatus, date_completed: new Date(Date.now()) }}
-      );
-  
-  return ({message: 'order status updated'});
-  }
 }
 
 module.exports = Customer;
-
-
-// static async confirmCompletion(orderId) {
-//   // get order status from order db
-//   const orderResult = await db
-//     .db(DB_NAME)
-//     .collection('orders')
-//     .findOne({ _id: new ObjectId(orderId) });
-
-//   let newStatus;
-//   if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_customer_confirm';
-//   else if (orderResult.status === 'awaiting_provider_confirm') newStatus = 'completed';
-//   else newStatus = orderResult.status;
-
-//   await db
-//       .db(DB_NAME)
-//       .collection('orders')
-//       .updateOne(
-//         { _id: new ObjectId(orderId) },
-//         { $set:{status: newStatus }}
-//       );
-  
-//   return ({message: 'order status updated'});
-// }

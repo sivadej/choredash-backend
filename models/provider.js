@@ -165,41 +165,6 @@ class Provider {
     return result;
   }
 
-  // confirmCompletion(): set statuses of order on provider end
-  static async confirmCompletion(orderId) {
-    // get order status from order db
-    const orderResult = await db
-      .db(DB_NAME)
-      .collection('orders')
-      .findOne({ _id: new ObjectId(orderId) });
-
-    let newStatus;
-    if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_customer_confirm';
-    else if (orderResult.status === 'awaiting_provider_confirm') newStatus = 'completed';
-    else newStatus = orderResult.status;
-
-    await db
-        .db(DB_NAME)
-        .collection('orders')
-        .updateOne(
-          { _id: new ObjectId(orderId) },
-          { $set:{status: newStatus, date_completed: new Date(Date.now())  }}
-        );
-    
-    return ({message: 'order status updated'});
-  }
-
-  // isConfirmedComplete() - boolean: is provider.current_order and status = 'confirmed_complete'
-  static async isConfirmedComplete(orderId) {
-    console.log('checking for provider confirmation...', orderId);
-    const providerResult = await db
-      .db(DB_NAME)
-      .collection(COLL)
-      .findOne({ current_order: orderId });
-    if (providerResult.status === 'confirmed_complete') return true;
-    else return false;
-  }
-
   static async getPendingOrder(providerId) {
     console.log('getting pending order for ', providerId);
     const res = await db
@@ -252,6 +217,24 @@ class Provider {
           },
         }
       );
+    return;
+  }
+
+  static async handleNoMatchFound(orderId) {
+    console.log('performing db ops for order status no matches found');
+    await db
+      .db(DB_NAME)
+      .collection('orders')
+      .updateOne(
+        { _id: new ObjectId(orderId) },
+        {
+          $set: {
+            status: 'no_provider_found',
+            provider_matches: [],
+          },
+        }
+      );
+    return;
   }
 }
 
