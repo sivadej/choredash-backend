@@ -1,4 +1,5 @@
-// providerFinder
+// providerFinder //
+
 // once a new order is created, perform a search for
 // nearest available providers, given coordinates
 // of customer and search params
@@ -7,18 +8,15 @@
 // driving time estimations
 // add results to queue sorted by shortest driving time first
 
-// only notify provider if they are available
-// (keep all providers regardless of availability in queue because
-// their status may change during the search process)
-
 const db = require('./../db');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { DB_NAME } = require('./../config');
 
 const Provider = require('./../models/provider')
 
-const NUMBER_OF_STATUS_RETRIES = 3;
-const STATUS_CHECK_DELAY_IN_MS = 5000;
+const NUMBER_OF_STATUS_RETRIES = 5;
+const STATUS_CHECK_DELAY_IN_MS = 500;
+const DEFAULT_SEARCH_RADIUS_MI = 15;
 
 const milesToMeters = (mi) => {
   return +mi * 1609.39;
@@ -33,10 +31,11 @@ class ProviderFinder {
     this.currentMatch;
   }
 
-  getMatches = async (radiusMiles = 15) => {
+  getMatches = async (radiusMiles = DEFAULT_SEARCH_RADIUS_MI) => {
     console.log('returning all matches');
     console.log('customer loc', this.customerLoc);
 
+    // 2dgraph geospatial query of provider locations from customer coordinates
     const result = await db
       .db(DB_NAME)
       .collection('providers')
@@ -100,15 +99,12 @@ class ProviderFinder {
 
   // recursively pop stack of potential matches to notify each provider
   static async notifyMatches(providerStack, orderId) {
+    console.log('notifyMatches() invoked for orderId', orderId);
 
     // recursion base case
     if (providerStack.length === 0) return console.log('did not find any available or accepted providers');
-
-    console.log('notifyMatches() invoked...');
+    
     let orderIdString = orderId.toString();
-    console.log('order id', orderId);
-    console.log(typeof(orderId));
-    console.log(typeof(orderIdString));
 
     // set the current match by popping from the stack
     let currentMatch = providerStack.pop();
@@ -120,35 +116,44 @@ class ProviderFinder {
     console.log('available?', status.available)
     console.log('current_order empty?', (status.current_order===null))
     if (status.available === false || status.current_order!==null) {
-      console.log('SKIP this match');
+      console.log('SKIP this provider:', currentMatch.id);
       return this.notifyMatches(providerStack, orderId);
     }
     
     console.log('setting status to waiting on', currentMatch.id)
-    const statusUpdateRes = await Provider.setOrderStatus(currentMatch.id, orderIdString, 'waiting');
-
-    console.log('NOT skipping..')
+    await Provider.setOrderStatus(currentMatch.id, orderIdString, 'waiting');
     
-    console.log('set current provider status to waiting...',currentMatch.id);
-
-    console.log('run timer function for this match', currentMatch);
-
-
+    console.log('run timer loop for this potential match', currentMatch.id);
     for (let i = 0; i < NUMBER_OF_STATUS_RETRIES; i++) {
       await new Promise((resolve) => setTimeout(resolve, STATUS_CHECK_DELAY_IN_MS));
       
       let res = await Provider.getStatus(currentMatch.id);
+      if (res === null) return this.notifyMatches(providerStack, orderId);
+
       console.log(`status of provider ${currentMatch.id}: ${res.status}`);
-      if (res.status === 'accepted') return console.log('match found. return this:', currentMatch);
-      if (res.status === 'rejected') return this.notifyMatches(providerStack, orderId);
+
+      if (res.status === 'accepted') {
+        console.log('match found:', currentMatch.id);
+        return this.handleMatchFound(currentMatch, orderId);
+      }
+      if (res.status === 'rejected') {
+        await Provider.setOrderStatus(currentMatch.id, null, null);
+        return this.notifyMatches(providerStack, orderIdString);
+      }
     } 
     console.log('this provider timed out. reset provider status', currentMatch.id)
-    const statusResetRes = await Provider.setOrderStatus(currentMatch.id, null, null);
+    await Provider.setOrderStatus(currentMatch.id, null, null);
 
     console.log('on to the next potential match...')
     return this.notifyMatches(providerStack, orderId);
     
   };
+
+  static async handleMatchFound (providerData, orderId) {
+    console.log('handling stuff for match found..')
+    await Provider.handleMatchFound(providerData, orderId);
+    return;
+  }
 
 }
 

@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
-const Provider = require('./provider');
 
 const COLL = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -165,23 +164,51 @@ class Customer {
 
   // confirmCompletion(): set statuses of order on customer end
   static async confirmCompletion(orderId) {
-    console.log('customer confirmed order completion', orderId);
-    console.log('updating orders table');
-    // set order status to 'customer_confirmed'
-    const orderUpdateResponse = await db
+  // get order status from order db
+  const orderResult = await db
+    .db(DB_NAME)
+    .collection('orders')
+    .findOne({ _id: new ObjectId(orderId) });
+
+  let newStatus;
+  if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_provider_confirm';
+  else if (orderResult.status === 'awaiting_customer_confirm') newStatus = 'completed';
+  else newStatus = orderResult.status;
+
+  await db
       .db(DB_NAME)
       .collection('orders')
       .updateOne(
         { _id: new ObjectId(orderId) },
-        { $set: { status: 'customer_confirmed' } }
+        { $set:{ status: newStatus, date_completed: new Date(Date.now()) }}
       );
-
-    // check provider table for completion status
-    const isProviderConfirmed = await Provider.isConfirmedComplete(orderId);
-    //    if provider has confirmed, close order
-    //          await Order.closeOrder(orderId)
-    return;
+  
+  return ({message: 'order status updated'});
   }
 }
 
 module.exports = Customer;
+
+
+// static async confirmCompletion(orderId) {
+//   // get order status from order db
+//   const orderResult = await db
+//     .db(DB_NAME)
+//     .collection('orders')
+//     .findOne({ _id: new ObjectId(orderId) });
+
+//   let newStatus;
+//   if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_customer_confirm';
+//   else if (orderResult.status === 'awaiting_provider_confirm') newStatus = 'completed';
+//   else newStatus = orderResult.status;
+
+//   await db
+//       .db(DB_NAME)
+//       .collection('orders')
+//       .updateOne(
+//         { _id: new ObjectId(orderId) },
+//         { $set:{status: newStatus }}
+//       );
+  
+//   return ({message: 'order status updated'});
+// }

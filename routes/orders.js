@@ -30,11 +30,8 @@ router.get('/:id', async (req, res, next) => {
 // accessible only by provider
 router.post('/:id/accept/:providerId', async (req, res, next) => {
   try {
-    const [orderResponse, providerResponse] = await Promise.all([
-      Order.accepted(req.params.id, req.params.providerId),
-      Provider.acceptOrder(req.params.providerId),
-    ]);
-    return res.json({ orderResponse, providerResponse });
+    await Provider.acceptOrder(req.params.providerId);
+    return res.json({message:'order accepted'});
   } catch (err) {
     return next(err);
   }
@@ -44,11 +41,8 @@ router.post('/:id/accept/:providerId', async (req, res, next) => {
 // accessible only by provider
 router.post('/:id/reject/:providerId', async (req, res, next) => {
   try {
-    const [orderResponse, providerResponse] = await Promise.all([
-      Order.rejected(req.params.id, req.params.providerId),
-      Provider.rejectOrder(req.params.providerId),
-    ]);
-    return res.json({ orderResponse, providerResponse });
+    await Provider.rejectOrder(req.params.providerId);
+    return res.json({message:'order rejected'});
   } catch (err) {
     return next(err);
   }
@@ -65,9 +59,9 @@ router.post('/:id/complete/customer', async (req, res, next) => {
 });
 
 // update order to reflect provider has confirmed completion
-router.post('/:id/complete/provider/:providerId', async (req, res, next) => {
+router.post('/:id/complete/provider', async (req, res, next) => {
   try {
-    const response = await Provider.confirmCompletion(req.params.id, req.params.providerId);
+    const response = await Provider.confirmCompletion(req.params.id);
     return res.json(response);
   } catch (err) {
     return next(err);

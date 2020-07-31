@@ -42,6 +42,14 @@ class Order {
     return result;
   }
 
+  // calculate total from array of objects in cart
+  static getSum(objArr, key) {
+    console.log(objArr);
+    if (objArr.length === 0) return 0;
+    let total = objArr.reduce((sum, cur) => sum + cur[key], 0);
+    return total;
+  }
+
   // create new order
   // immediately begin search for provider match
   static async createNew(custId, cartData) {
@@ -59,9 +67,11 @@ class Order {
         customer_location: customer.location,
         items: cartData,
         date_created: new Date(Date.now()),
+        date_completed: null,
         provider_id: null,
-        order_total: 0,
+        order_total: this.getSum(cartData,'price'),
         est_travel_time: null,
+        est_work_time: this.getSum(cartData,'est_time'),
         status: 'searching',
       });
 
@@ -82,8 +92,8 @@ class Order {
     const providerFinder = new ProviderFinder(orderId, custLoc);
     const matches = await providerFinder.getMatches();
 
-    if (!matches) return console.log('no providers found')
-    console.log('returned matches', matches)
+    if (!matches) return console.log('no providers found');
+    console.log('returned matches', matches);
 
     const updateResult = await this.updateStatus(
       orderId,
@@ -92,9 +102,9 @@ class Order {
     );
     if (updateResult.modifiedCount !== 1) return 'error';
 
-    //const assignedProvider = providerFinder.notifyProviderLoop();
-    const assignedProvider = await ProviderFinder.notifyMatches(matches, orderId);
-    //return assignedProvider;
+    const assignedProvider = ProviderFinder.notifyMatches(matches, orderId);
+    //console.log('assigned provider? ', assignedProvider)
+    return assignedProvider;
   }
 
   static async accepted(orderId, providerId) {
@@ -130,11 +140,9 @@ class Order {
   static async isCustomerConfirmed(orderId) {
     console.log('checking if customer has confirmed completion:', orderId);
     const orderResult = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .findOne(
-      { _id: new ObjectId(orderId) }
-    );
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ _id: new ObjectId(orderId) });
     if (orderResult.status === 'customer_confirmed') return true;
     else return false;
   }
@@ -152,7 +160,7 @@ class Order {
         { $set: { status: 'completed' } }
       );
     console.log(orderUpdateResult);
-    
+
     // retrieve providerId from order update query
     // set provider availability to true
     // set provider current order to null

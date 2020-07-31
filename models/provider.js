@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
-//const Order = require('./order');
 
 const COLL = 'providers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -96,7 +95,6 @@ class Provider {
     else return { message: 'error' };
   }
 
-  
   // update provider's availability
   static async updateAvailability(avail) {
     console.log('setting availability');
@@ -114,10 +112,7 @@ class Provider {
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { status: 'accepted', available: false } }
-      );
+      .updateOne({ _id: new ObjectId(id) }, { $set: { status: 'accepted' } });
     return result;
   }
 
@@ -171,59 +166,92 @@ class Provider {
   }
 
   // confirmCompletion(): set statuses of order on provider end
-  static async confirmCompletion(orderId, providerId) {
-    // if providerId not passed in, query order to retrieve providerId
-
-    console.log('provider has confirmed order completion', orderId);
-    console.log('updating PROVIDERS table');
-    // set order status to 'customer_confirmed'
-    const provUpdateResponse = await db
+  static async confirmCompletion(orderId) {
+    // get order status from order db
+    const orderResult = await db
       .db(DB_NAME)
-      .collection(COLL)
-      .updateOne(
-        { _id: new ObjectId(providerId) },
-        { $set: { status: 'confirmed_complete' } }
-      );
+      .collection('orders')
+      .findOne({ _id: new ObjectId(orderId) });
 
-    // check order table for completion status
-    //const isCustomerConfirmed = await Order.isCustomerConfirmed(orderId);
-    //if (isCustomerConfirmed) await Order.closeOrder(orderId);
-    return;
+    let newStatus;
+    if (orderResult.status === 'order_in_progress') newStatus = 'awaiting_customer_confirm';
+    else if (orderResult.status === 'awaiting_provider_confirm') newStatus = 'completed';
+    else newStatus = orderResult.status;
+
+    await db
+        .db(DB_NAME)
+        .collection('orders')
+        .updateOne(
+          { _id: new ObjectId(orderId) },
+          { $set:{status: newStatus, date_completed: new Date(Date.now())  }}
+        );
+    
+    return ({message: 'order status updated'});
   }
 
   // isConfirmedComplete() - boolean: is provider.current_order and status = 'confirmed_complete'
   static async isConfirmedComplete(orderId) {
     console.log('checking for provider confirmation...', orderId);
     const providerResult = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .findOne(
-      { current_order: orderId }
-    );
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ current_order: orderId });
     if (providerResult.status === 'confirmed_complete') return true;
     else return false;
   }
 
   static async getPendingOrder(providerId) {
-    console.log('getting pending order for ',providerId);
+    console.log('getting pending order for ', providerId);
     const res = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .findOne(
-      { _id: new ObjectId(providerId) }
-    );
-    let pendingOrder = {order_id:res.current_order, status:res.status, available:res.available};
+      .db(DB_NAME)
+      .collection(COLL)
+      .findOne({ _id: new ObjectId(providerId) });
+    let pendingOrder = { order_id: res.current_order, status: res.status };
     return pendingOrder;
   }
 
   static async resetAll() {
     console.log('resetting all provider status');
     const res = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .updateMany(
-      {},{$set:{available: true, status: null, current_order: null}}
-    );
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateMany(
+        {},
+        { $set: { available: true, status: null, current_order: null } }
+      );
+  }
+
+  static async handleMatchFound(providerData, orderId) {
+    // perform db operations
+    // set provider availability to false
+    // set provider status to 'order_in_progress'
+    console.log('performing provider db ops');
+    await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne(
+        { _id: new ObjectId(providerData.id) },
+        { $set: { available: false, status: 'order_in_progress' } }
+      );
+    // set order status to 'order_in_progress'
+    // set order provider_matches to empty array []
+    // set order travel times from providerData
+    // assign providerId to order.provider_id
+    console.log('performing order db ops');
+    await db
+      .db(DB_NAME)
+      .collection('orders')
+      .updateOne(
+        { _id: new ObjectId(orderId) },
+        {
+          $set: {
+            provider_matches: [],
+            status: 'order_in_progress',
+            est_travel_time: providerData.duration_text,
+            provider_id: providerData.id,
+          },
+        }
+      );
   }
 }
 
