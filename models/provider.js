@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
-const Order = require('./order');
+//const Order = require('./order');
 
 const COLL = 'providers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -167,39 +167,64 @@ class Provider {
       .db(DB_NAME)
       .collection(COLL)
       .findOne({ _id: new ObjectId(id), available: true });
-    console.log(result);
     if (result === null) return null;
-    return result.status;
+    return result;
   }
 
   // confirmCompletion(): set statuses of order on provider end
-  static async confirmCompletion(orderId, providerId = null) {
+  static async confirmCompletion(orderId, providerId) {
     // if providerId not passed in, query order to retrieve providerId
 
     console.log('provider has confirmed order completion', orderId);
     console.log('updating PROVIDERS table');
     // set order status to 'customer_confirmed'
-    // const provUpdateResponse = await db
-    //   .db(DB_NAME)
-    //   .collection(COLL)
-    //   .updateOne(
-    //     { _id: new ObjectId(providerId) },
-    //     { $set: { status: 'confirmed_complete' } }
-    //   );
+    const provUpdateResponse = await db
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne(
+        { _id: new ObjectId(providerId) },
+        { $set: { status: 'confirmed_complete' } }
+      );
 
     // check order table for completion status
-    const customerConfirmedComplete = await Order.isCustomerConfirmed(orderId);
-    //    if provider has confirmed:
-    //        await Order.closeOrder(orderId)
+    //const isCustomerConfirmed = await Order.isCustomerConfirmed(orderId);
+    //if (isCustomerConfirmed) await Order.closeOrder(orderId);
     return;
   }
 
   // isConfirmedComplete() - boolean: is provider.current_order and status = 'confirmed_complete'
   static async isConfirmedComplete(orderId) {
     console.log('checking for provider confirmation...', orderId);
-    // query provider = this.orderId.provider_id
-    // get provider.current_order, provider.status
-    return;
+    const providerResult = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .findOne(
+      { current_order: orderId }
+    );
+    if (providerResult.status === 'confirmed_complete') return true;
+    else return false;
+  }
+
+  static async getPendingOrder(providerId) {
+    console.log('getting pending order for ',providerId);
+    const res = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .findOne(
+      { _id: new ObjectId(providerId) }
+    );
+    let pendingOrder = {order_id:res.current_order, status:res.status, available:res.available};
+    return pendingOrder;
+  }
+
+  static async resetAll() {
+    console.log('resetting all provider status');
+    const res = await db
+    .db(DB_NAME)
+    .collection(COLL)
+    .updateMany(
+      {},{$set:{available: true, status: null, current_order: null}}
+    );
   }
 }
 

@@ -4,7 +4,6 @@ const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
 const Provider = require('./provider');
-const Order = require('./order');
 
 const COLL = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -178,9 +177,7 @@ class Customer {
       );
 
     // check provider table for completion status
-    const providerConfirmedComplete = await Provider.isConfirmedComplete(
-      orderId
-    );
+    const isProviderConfirmed = await Provider.isConfirmedComplete(orderId);
     //    if provider has confirmed, close order
     //          await Order.closeOrder(orderId)
     return;

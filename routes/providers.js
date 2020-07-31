@@ -4,6 +4,17 @@ const Provider = require('./../models/provider');
 const Order = require('./../models/order');
 const { adminRequired, ensureCorrectUser } = require('./../middleware/auth');
 
+// TODO REMOVE THIS LATER
+// reset all provider statuses to available and null status and null current_order
+router.get('/reset', async (req,res,next)=>{
+  try {
+    const response = await Provider.resetAll();
+    return res.json(response);
+  } catch (err) {
+    return next(err);
+  }
+})
+
 // GET / - get all providers
 // restrict to admin use only
 router.get('/', adminRequired, async (req, res, next) => {
@@ -19,6 +30,16 @@ router.get('/', adminRequired, async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const response = await Provider.getById(req.params.id);
+    return res.json(response);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /id/pending - get order details for 
+router.get('/:id/pending', async (req, res, next) => {
+  try {
+    const response = await Provider.getPendingOrder(req.params.id);
     return res.json(response);
   } catch (err) {
     return next(err);
@@ -65,7 +86,7 @@ router.post('/auth', async (req, res, next) => {
 });
 
 // GET /:id/orders
-router.get('/:id/orders', ensureCorrectUser, async (req,res,next)=>{
+router.get('/:id/orders', async (req,res,next)=>{
   try {
     const response = await Order.getAllById(req.params.id, 'provider');
     return res.json(response);
@@ -73,5 +94,9 @@ router.get('/:id/orders', ensureCorrectUser, async (req,res,next)=>{
     return next(err);
   }
 })
+
+
+
+
 
 module.exports = router;

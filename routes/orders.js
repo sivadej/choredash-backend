@@ -65,9 +65,9 @@ router.post('/:id/complete/customer', async (req, res, next) => {
 });
 
 // update order to reflect provider has confirmed completion
-router.post('/:id/complete/provider', async (req, res, next) => {
+router.post('/:id/complete/provider/:providerId', async (req, res, next) => {
   try {
-    const response = await Provider.confirmCompletion(req.params.id);
+    const response = await Provider.confirmCompletion(req.params.id, req.params.providerId);
     return res.json(response);
   } catch (err) {
     return next(err);

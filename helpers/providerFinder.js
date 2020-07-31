@@ -41,6 +41,7 @@ class ProviderFinder {
       .db(DB_NAME)
       .collection('providers')
       .find({
+        available: true,
         location: {
           $near: {
             $geometry: { type: 'Point', coordinates: this.customerLoc },
@@ -50,6 +51,8 @@ class ProviderFinder {
         },
       })
       .toArray();
+    
+    if (result.length===0) return null;
 
     if (result.length > 0) {
       console.log(`found ${result.length} nearby providers:`);
@@ -57,7 +60,7 @@ class ProviderFinder {
       this.providerLocs = result.map((p) => [p.location[1], p.location[0]]);
       result.forEach((p) => {
         this.providerStack.push({
-          id: p._id,
+          id: p._id.toString(),
           location: p.location,
         });
       });
@@ -97,7 +100,6 @@ class ProviderFinder {
 
   notifyProviderLoop = async () => {
     console.log('notifying providers...');
-    console.log('current stack', this.providerStack)
     if (this.providerStack.length === 0) return;
 
     // set the current match by popping from the stack
@@ -116,6 +118,7 @@ class ProviderFinder {
       // accepted ? move on to active status
       if (status === 'accepted') {
         console.log('hooray! matched provider has accepted!');
+        this.providerStack = [];
         return;
       }
       // rejected ? notify next provider
@@ -138,6 +141,94 @@ class ProviderFinder {
     // suggest searching with larger map radius
     return console.log('no providers available');
   };
+
+
+  // recursively pop stack of matches
+  static async notifyMatches(providerStack, orderId) {
+
+    // recursion base case
+    if (providerStack.length === 0) return console.log('end of recursion');
+
+
+    console.log('notifyMatches() invoked...');
+    let orderIdString = orderId.toString();
+    console.log('order id', orderId);
+    console.log(typeof(orderId));
+    console.log(typeof(orderIdString));
+
+    // set the current match by popping from the stack
+    let currentMatch = providerStack.pop();
+    console.log('popped from stack:', currentMatch)
+    console.log('remaining stack:', providerStack)
+    //if (!currentMatch) return null;
+
+    // call function to assign 'waiting' status to current providerId
+    // only assign current_order property if provider is available
+
+  
+    console.log('check on currentMatch status as OK to proceed...')
+    let status = await Provider.getStatus(currentMatch.id);
+    console.log('skip if status is unavailable or current_order is not null')
+    console.log('available?', status.available)
+    console.log('current_order empty?', (status.current_order===null))
+    if (status.available === false || status.current_order!==null) {
+      console.log('SKIP this match');
+      return this.notifyMatches(providerStack, orderId);
+    }
+    else console.log('setting status to waiting on', currentMatch.id)
+
+    console.log('NOT skipping..')
+    
+    console.log('set current provider status to waiting...',currentMatch.id);
+    console.log('run timer function for this match', currentMatch);
+
+
+    for (let i = 0; i < 5; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log('checking status of', currentMatch.id);
+    }
+
+
+    
+    console.log('this provider timed out. resetting status', currentMatch.id)
+    return this.notifyMatches(providerStack, orderId);
+    // let res = await Provider.setOrderStatus(currentMatch.id, orderIdString, 'waiting');
+
+    //console.log('status update result',res.modifiedCount)
+    //if (res === null) return notifyProviderLoop();
+
+    // perform status check every 5 seconds for 1 minute
+    // for (let i = 0; i < 12; i++) {
+    //   let status = await Provider.getStatus(currentMatch.id);
+    //   if (status === null) return notifyProviderLoop();
+    //   // accepted ? move on to active status
+    //   if (status === 'accepted') {
+    //     console.log('hooray! matched provider has accepted!');
+    //     providerStack = [];
+    //     return;
+    //   }
+    //   // rejected ? notify next provider
+    //   if (status === 'rejected') {
+    //     console.log('order rejected by this match... on to the next one...');
+    //     await Provider.resetStatus(currentMatch.id);
+    //     return notifyProviderLoop();
+    //   }
+    //   // currently set to unavailable ? next...
+    //   if (status === 'unavailable') {
+    //     console.log('matched but currently unavailable... skipping...');
+    //     return notifyProviderLoop();
+    //   }
+    //   await new Promise((resolve) => setTimeout(resolve, 5000));
+    //   // time out ? end loop
+    // }
+    // if (providerStack.length) return notifyProviderLoop();
+
+    // // entire stack has been exhausted, no further matches.
+    // // suggest searching with larger map radius
+    // return console.log('no providers available');
+    
+  };
+
 }
 
 module.exports = ProviderFinder;
