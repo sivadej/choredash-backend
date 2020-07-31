@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
+const Order = require('./order');
 
 const COLL = 'providers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -95,36 +96,40 @@ class Provider {
     else return { message: 'error' };
   }
 
-  // update provider's current location
-  static async updateLocation() {}
-
+  
   // update provider's availability
   static async updateAvailability(avail) {
     console.log('setting availability');
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne({ _id: new ObjectId(id) }, { $set: {available: avail}});
+      .updateOne({ _id: new ObjectId(id) }, { $set: { available: avail } });
     //if (result.updatedCount === 1)
-      return result;
+    return result;
     //else return { message: 'error' };
   }
 
-  static async acceptOrder(id){
-    console.log('updating provider for order acceptance')
+  static async acceptOrder(id) {
+    console.log('updating provider for order acceptance');
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne({ _id: new ObjectId(id) }, { $set: {status: 'accepted', available: false}});
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: 'accepted', available: false } }
+      );
     return result;
   }
 
-  static async rejectOrder(id){
-    console.log('updating provider for order rejection')
+  static async rejectOrder(id) {
+    console.log('updating provider for order rejection');
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne({ _id: new ObjectId(id) }, { $set: {status: 'rejected', current_order: null}});
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: 'rejected', current_order: null } }
+      );
     return result;
   }
 
@@ -133,23 +138,27 @@ class Provider {
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne({ _id: new ObjectId(id), available: true }, { $set: {status, current_order:orderId}});
+      .updateOne(
+        { _id: new ObjectId(id), available: true },
+        { $set: { status, current_order: orderId } }
+      );
     if (result.modifiedCount === 1) {
       return result;
-    }
-    else return null;
+    } else return null;
   }
 
   static async resetStatus(id) {
     console.log('resetting status');
     const result = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .updateOne({ _id: new ObjectId(id) }, { $set: {status:null, current_order:null}});
-  if (result.modifiedCount === 1) {
-    return result;
-  }
-  else return null;
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: null, current_order: null } }
+      );
+    if (result.modifiedCount === 1) {
+      return result;
+    } else return null;
   }
 
   static async getStatus(id) {
@@ -161,6 +170,36 @@ class Provider {
     console.log(result);
     if (result === null) return null;
     return result.status;
+  }
+
+  // confirmCompletion(): set statuses of order on provider end
+  static async confirmCompletion(orderId, providerId = null) {
+    // if providerId not passed in, query order to retrieve providerId
+
+    console.log('provider has confirmed order completion', orderId);
+    console.log('updating PROVIDERS table');
+    // set order status to 'customer_confirmed'
+    // const provUpdateResponse = await db
+    //   .db(DB_NAME)
+    //   .collection(COLL)
+    //   .updateOne(
+    //     { _id: new ObjectId(providerId) },
+    //     { $set: { status: 'confirmed_complete' } }
+    //   );
+
+    // check order table for completion status
+    const customerConfirmedComplete = await Order.isCustomerConfirmed(orderId);
+    //    if provider has confirmed:
+    //        await Order.closeOrder(orderId)
+    return;
+  }
+
+  // isConfirmedComplete() - boolean: is provider.current_order and status = 'confirmed_complete'
+  static async isConfirmedComplete(orderId) {
+    console.log('checking for provider confirmation...', orderId);
+    // query provider = this.orderId.provider_id
+    // get provider.current_order, provider.status
+    return;
   }
 }
 

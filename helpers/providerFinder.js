@@ -15,9 +15,8 @@ const db = require('./../db');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
-const Order = require('./../models/Order');
-const Provider = require('./../models/Provider');
-const { setStatus } = require('./../models/Provider');
+
+const Provider = require('./../models/provider')
 
 const MATCH_LIMIT = 10;
 
@@ -54,7 +53,8 @@ class ProviderFinder {
 
     if (result.length > 0) {
       console.log(`found ${result.length} nearby providers:`);
-      this.providerLocs = result.map((p) => [p.location[1], p.location[0]]); //[lat,lng] array for googlemaps api
+      // reverse [lat,lng] array for googlemaps api call
+      this.providerLocs = result.map((p) => [p.location[1], p.location[0]]);
       result.forEach((p) => {
         this.providerStack.push({
           id: p._id,
@@ -70,9 +70,9 @@ class ProviderFinder {
   // use googlemaps api to calculate driving distance.
   // insert into provider's object in stack.
   insertDrivingDistances = async () => {
-    console.log('getting driving times from Google Maps...', this.providerLocs, this.customerLoc);
+    console.log('getting driving times from Google Maps...');
     const distanceResult = await MapsApi.getDistances(
-      [[this.customerLoc[1],this.customerLoc[0]]],
+      [[this.customerLoc[1], this.customerLoc[0]]],
       this.providerLocs
     );
     if (
@@ -90,43 +90,46 @@ class ProviderFinder {
 
   sortMatches = () => {
     console.log('sorting stack by shortest driving time last');
-    return (this.providerStack).sort((a,b)=>b.duration_value - a.duration_value);
+    return this.providerStack.sort(
+      (a, b) => b.duration_value - a.duration_value
+    );
   };
 
   notifyProviderLoop = async () => {
-    console.log('notifying providers...')
+    console.log('notifying providers...');
+    console.log('current stack', this.providerStack)
     if (this.providerStack.length === 0) return;
-  
+
     // set the current match by popping from the stack
     this.currentMatch = this.providerStack.pop();
     if (!this.currentMatch) return;
 
     // call function to assign 'waiting' status to current providerId
     // only assign current_order property if provider is available
-    let res = await Provider.setOrderStatus(this.currentMatch.id, this.orderId.toString(), 'waiting');
+    let res = await Provider.setOrderStatus(this.currentMatch.id,this.orderId.toString(),'waiting');
     if (res === null) return this.notifyProviderLoop();
-    
+
     // perform status check every 5 seconds for 1 minute
-    for (let i=0; i<12; i++) {
+    for (let i = 0; i < 12; i++) {
       let status = await Provider.getStatus(this.currentMatch.id);
       if (status === null) return this.notifyProviderLoop();
       // accepted ? move on to active status
       if (status === 'accepted') {
-        console.log('hooray! matched provider has accepted!')
+        console.log('hooray! matched provider has accepted!');
         return;
       }
       // rejected ? notify next provider
       if (status === 'rejected') {
-        console.log('order rejected by this match... on to the next one...')
+        console.log('order rejected by this match... on to the next one...');
         await Provider.resetStatus(this.currentMatch.id);
         return this.notifyProviderLoop();
       }
       // currently set to unavailable ? next...
       if (status === 'unavailable') {
-        console.log('matched but currently unavailable... skipping...')
+        console.log('matched but currently unavailable... skipping...');
         return this.notifyProviderLoop();
       }
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       // time out ? end loop
     }
     if (this.providerStack.length) return this.notifyProviderLoop();
@@ -134,8 +137,7 @@ class ProviderFinder {
     // entire stack has been exhausted, no further matches.
     // suggest searching with larger map radius
     return console.log('no providers available');
-  }
-
+  };
 }
 
 module.exports = ProviderFinder;

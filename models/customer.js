@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
 const { DB_NAME } = require('./../config');
+const Provider = require('./provider');
+const Order = require('./order');
 
 const COLL = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
@@ -92,7 +94,7 @@ class Customer {
     // TODO: check if valid user before performing update.
     // return confirmation of update
     delete data._token;
-    
+
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
@@ -100,8 +102,7 @@ class Customer {
 
     if (result.result.ok) {
       return data;
-    }
-    else return { error: 'user not found' };
+    } else return { error: 'user not found' };
   }
 
   // updateOrders(id, data)
@@ -128,14 +129,13 @@ class Customer {
 
   static async clearCart(userId) {
     const result = await db
-    .db(DB_NAME)
-    .collection(COLL)
-    .updateOne({ _id: new ObjectId(userId) }, { $set: { cart: [] } });
+      .db(DB_NAME)
+      .collection(COLL)
+      .updateOne({ _id: new ObjectId(userId) }, { $set: { cart: [] } });
 
-  if (result.result.ok) {
-    return;
-  }
-  else return { message: 'error' };
+    if (result.result.ok) {
+      return;
+    } else return { message: 'error' };
   }
 
   // updateCart
@@ -158,13 +158,32 @@ class Customer {
     const result = await db
       .db(DB_NAME)
       .collection(COLL)
-      .updateOne(
-        { _id: new ObjectId(userId) },
-        { $set: { cart: newCart } }
-      );
- 
+      .updateOne({ _id: new ObjectId(userId) }, { $set: { cart: newCart } });
+
     if (result.modifiedCount === 1) return newCart;
     else return { message: 'error. no changes made to cart.' };
+  }
+
+  // confirmCompletion(): set statuses of order on customer end
+  static async confirmCompletion(orderId) {
+    console.log('customer confirmed order completion', orderId);
+    console.log('updating orders table');
+    // set order status to 'customer_confirmed'
+    const orderUpdateResponse = await db
+      .db(DB_NAME)
+      .collection('orders')
+      .updateOne(
+        { _id: new ObjectId(orderId) },
+        { $set: { status: 'customer_confirmed' } }
+      );
+
+    // check provider table for completion status
+    const providerConfirmedComplete = await Provider.isConfirmedComplete(
+      orderId
+    );
+    //    if provider has confirmed, close order
+    //          await Order.closeOrder(orderId)
+    return;
   }
 }
 
