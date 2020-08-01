@@ -19,6 +19,7 @@ class Order {
       .db(DB_NAME)
       .collection(COLL)
       .find({ [`${userType}_id`]: userId })
+      .sort({ date_created: -1})
       .toArray();
     return result;
   }

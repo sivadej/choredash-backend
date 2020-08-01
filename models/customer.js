@@ -1,11 +1,24 @@
 const db = require('../db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const MapsApi = require('./../mapsApi/mapsApi');
 const { ObjectId } = require('mongodb');
-const { DB_NAME } = require('./../config');
+const { DB_NAME, SECRET } = require('./../config');
 
 const COLL = 'customers';
 const BCRYPT_WORK_FACTOR = 10;
+
+// get a signed JWT from user data
+function createToken(user) {
+  let payload = {
+    id: user._id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    type: user.type,
+  };
+  return jwt.sign(payload, SECRET);
+}
 
 class Customer {
   static async getAll() {
@@ -47,9 +60,14 @@ class Customer {
       location: [coords.lng, coords.lat],
       cart: [],
     };
-    const result = await db.db(DB_NAME).collection(COLL).insertOne(custObj);
+    await db.db(DB_NAME).collection(COLL).insertOne(custObj);
 
-    return result.ops[0];
+    const loginCust = await Customer.authenticate({email:customer.email, password:customer.password});
+    if (loginCust.authenticated) {
+      const token = createToken({ ...loginCust.user, type: 'customer' });
+      return ({_token:token});
+    }
+    else return {message: loginCust.message}
   }
 
   // authenticate(data): return user on valid authentication
@@ -88,11 +106,8 @@ class Customer {
   // updateProfile(data)
   // Return: {}
   static async updateProfile(id, data) {
-    console.log('updating user..', id, data);
-    // TODO: check if valid user before performing update.
-    // return confirmation of update
-    delete data._token;
-
+    console.log('updating user profile..', id);
+    
     const result = await db
       .db(DB_NAME)
       .collection(COLL)

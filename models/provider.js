@@ -166,7 +166,6 @@ class Provider {
   }
 
   static async getPendingOrder(providerId) {
-    console.log('getting pending order for ', providerId);
     const res = await db
       .db(DB_NAME)
       .collection(COLL)

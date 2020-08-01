@@ -61,7 +61,7 @@ router.post('/', async (req, res, next) => {
       },
     };
     const response = await Customer.addNew(data);
-    return res.json(response);
+    return res.json({...response, ok:true});
   } catch (err) {
     return next(err);
   }
