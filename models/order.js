@@ -43,11 +43,11 @@ class Order {
   }
 
   // calculate total from array of objects in cart
-  static getSum(objArr, key) {
+  static getSum(objArr, key, decimals) {
     console.log(objArr);
     if (objArr.length === 0) return 0;
     let total = objArr.reduce((sum, cur) => sum + cur[key], 0);
-    return total;
+    return total.toFixed(decimals);
   }
 
   // create new order
@@ -69,9 +69,9 @@ class Order {
         date_created: new Date(Date.now()),
         date_completed: null,
         provider_id: null,
-        order_total: this.getSum(cartData,'price'),
+        order_total: this.getSum(cartData,'price',2),
         est_travel_time: null,
-        est_work_time: this.getSum(cartData,'est_time'),
+        est_work_time: this.getSum(cartData,'est_time',0),
         status: 'searching',
       });
 
@@ -92,7 +92,7 @@ class Order {
     const providerFinder = new ProviderFinder(orderId, custLoc);
     const matches = await providerFinder.getMatches();
 
-    if (!matches) return console.log('no providers found');
+    if (!matches) return ProviderFinder.handleNoMatchesFound(orderId);
     console.log('returned matches', matches);
 
     const updateResponse = await this.updateStatus(
@@ -146,7 +146,7 @@ class Order {
       .collection(COLL)
       .findOneAndUpdate(
         { _id: new ObjectId(orderId), status: 'order_in_progress' },
-        { $set: { status: 'completed' } }
+        { $set: { status: 'completed', date_completed: new Date(Date.now()) } }
       );
     console.log('update db result',orderUpdateRes);
     if (orderUpdateRes.value === null) return { message: 'cannot update order status.' }

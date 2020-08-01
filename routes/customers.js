@@ -37,10 +37,30 @@ router.patch('/:id', ensureCorrectUser, async (req, res, next) => {
   }
 });
 
+// Input body { email, first_name, last_name, password,
+//              address:{ line1, line2, city, state, zip },
+//              location: [lng, lat],
+//              orders: [] //array of orders by orderId
+//             }
+
 // POST: add new customer
 router.post('/', async (req, res, next) => {
   try {
-    const response = await Customer.addNew(req.body);
+    console.log('received body', req.body);
+    const data = {
+      email: req.body.email,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      password: req.body.password,
+      address: {
+        line1: req.body.address_line1,
+        line2: req.body.address_line2,
+        city: req.body.city,
+        state: req.body.state,
+        zip: req.body.zip,
+      },
+    };
+    const response = await Customer.addNew(data);
     return res.json(response);
   } catch (err) {
     return next(err);
@@ -97,10 +117,10 @@ router.patch('/:id/cart', ensureCorrectUser, async (req, res, next) => {
 });
 
 // POST /:id/cart/checkout - customer order checkout
-// 
-router.post('/:id/cart/checkout', ensureCorrectUser, async (req,res,next)=>{
-  try{
-    console.log('finalizing checkout for customer',req.params.id)
+//
+router.post('/:id/cart/checkout', ensureCorrectUser, async (req, res, next) => {
+  try {
+    console.log('finalizing checkout for customer', req.params.id);
 
     // get cust cart, send to new order, return orderid details
     const cartResponse = await Customer.getCart(req.params.id);
@@ -112,27 +132,27 @@ router.post('/:id/cart/checkout', ensureCorrectUser, async (req,res,next)=>{
       if (orderResponse.status === 'searching') {
         await Customer.clearCart(req.params.id);
         return res.json({
-          success: true, 
+          success: true,
           orderId: orderResponse._id,
           data: orderResponse,
         });
       }
     }
 
-    return res.json({message: 'checkout failed'});
+    return res.json({ message: 'checkout failed' });
   } catch (err) {
     return next(err);
   }
 });
 
 // GET /:id/orders
-router.get('/:id/orders', ensureCorrectUser, async (req,res,next)=>{
+router.get('/:id/orders', ensureCorrectUser, async (req, res, next) => {
   try {
     const response = await Order.getAllById(req.params.id, 'customer');
     return res.json(response);
   } catch (err) {
     return next(err);
   }
-})
+});
 
 module.exports = router;

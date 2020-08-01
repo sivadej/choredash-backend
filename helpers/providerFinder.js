@@ -14,8 +14,8 @@ const { DB_NAME } = require('./../config');
 
 const Provider = require('./../models/provider');
 
-const NUMBER_OF_STATUS_RETRIES = 10;
-const STATUS_CHECK_DELAY_IN_MS = 1000;
+const NUMBER_OF_STATUS_RETRIES = 12;
+const STATUS_CHECK_DELAY_IN_MS = 500;
 const DEFAULT_SEARCH_RADIUS_MI = 15;
 
 const milesToMeters = (mi) => {
