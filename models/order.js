@@ -1,7 +1,7 @@
 const db = require('../db');
 const { DB_NAME } = require('./../config');
 const { ObjectId } = require('mongodb');
-const ProviderFinder = require('./../helpers/ProviderFinder');
+const ProviderFinder = require('./../helpers/providerFinder');
 const Customer = require('./customer');
 
 const COLL = 'orders';
