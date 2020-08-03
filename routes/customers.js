@@ -50,13 +50,6 @@ router.patch('/:id', ensureCorrectUser, async (req, res, next) => {
 // POST: add new customer
 router.post('/', async (req, res, next) => {
   try {
-    const validation = validate(req.body, customerSchema_new);
-    if (!validation.valid) {
-      return next({
-        status: 400,
-        error: validation.errors.map((e) => e.stack),
-      });
-    }
     const data = {
       email: req.body.email,
       first_name: req.body.first_name,
@@ -66,10 +59,17 @@ router.post('/', async (req, res, next) => {
         line1: req.body.address_line1,
         line2: req.body.address_line2,
         city: req.body.city,
-        state: req.body.state,
+        state: req.body.state.toUpperCase(),
         zip: req.body.zip,
       },
     };
+    const validation = validate(data, customerSchema_new);
+    if (!validation.valid) {
+      return next({
+        status: 400,
+        error: validation.errors.map((e) => e.stack),
+      });
+    }
     const response = await Customer.addNew(data);
     return res.json({ ...response, ok: true });
   } catch (err) {
