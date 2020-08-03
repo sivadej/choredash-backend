@@ -4,6 +4,10 @@ const Customer = require('./../models/customer');
 const Order = require('./../models/order');
 const { adminRequired, ensureCorrectUser } = require('./../middleware/auth');
 
+const { validate } = require('jsonschema');
+const customerSchema_new = require('./../schemas/customerSchema_new');
+const customerSchema_edit = require('./../schemas/customerSchema_edit');
+
 // GET / - get all customers
 // restrict to admin use only
 router.get('/', adminRequired, async (req, res, next) => {
@@ -46,7 +50,13 @@ router.patch('/:id', ensureCorrectUser, async (req, res, next) => {
 // POST: add new customer
 router.post('/', async (req, res, next) => {
   try {
-    console.log('received body', req.body);
+    const validation = validate(req.body, customerSchema_new);
+    if (!validation.valid) {
+      return next({
+        status: 400,
+        error: validation.errors.map((e) => e.stack),
+      });
+    }
     const data = {
       email: req.body.email,
       first_name: req.body.first_name,
@@ -61,7 +71,7 @@ router.post('/', async (req, res, next) => {
       },
     };
     const response = await Customer.addNew(data);
-    return res.json({...response, ok:true});
+    return res.json({ ...response, ok: true });
   } catch (err) {
     return next(err);
   }
@@ -82,6 +92,13 @@ router.delete('/:id', ensureCorrectUser, async (req, res, next) => {
 // body params: object { email, password }
 router.post('/auth', async (req, res, next) => {
   try {
+    const validation = validate(req.body, customerSchema_edit);
+    if (!validation.valid) {
+      return next({
+        status: 400,
+        error: validation.errors.map((e) => e.stack),
+      });
+    }
     const response = await Customer.authenticate(req.body);
     return res.json(response);
   } catch (err) {

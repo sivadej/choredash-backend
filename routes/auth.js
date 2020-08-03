@@ -5,6 +5,9 @@ const Customer = require('./../models/customer');
 const Provider = require('./../models/provider');
 const { SECRET } = require('./../config');
 
+const { validate } = require('jsonschema');
+const authSchema_login = require('./../schemas/authSchema_login');
+
 // get a signed JWT from user data
 function createToken(user) {
   let payload = {
@@ -22,13 +25,19 @@ function createToken(user) {
 router.post('/customer/login', async (req, res, next) => {
   console.log('invoked customer login');
   try {
+    const validation = validate(req.body, authSchema_login);
+    if (!validation.valid) {
+      return next({
+        status: 400,
+        error: validation.errors.map((e) => e.stack),
+      });
+    }
     const customer = await Customer.authenticate(req.body);
-    console.log(customer.user)
+    console.log(customer.user);
     if (customer.authenticated) {
       const token = createToken({ ...customer.user, type: 'customer' });
-      return res.json({_token:token});
-    }
-    else return res.json({message: customer.message})
+      return res.json({ _token: token });
+    } else return res.json({ message: customer.message });
   } catch (err) {
     return next(err);
   }
@@ -38,13 +47,19 @@ router.post('/customer/login', async (req, res, next) => {
 // return signed token
 router.post('/provider/login', async (req, res, next) => {
   console.log('invoked provider login');
+  const validation = validate(req.body, authSchema_login);
+  if (!validation.valid) {
+    return next({
+      status: 400,
+      error: validation.errors.map((e) => e.stack),
+    });
+  }
   try {
     const provider = await Provider.authenticate(req.body);
     if (provider.authenticated) {
       const token = createToken({ ...provider.user, type: 'provider' });
-      return res.json({_token:token});
-    }
-    else return res.json({message: provider.message})
+      return res.json({ _token: token });
+    } else return res.json({ message: provider.message });
   } catch (err) {
     return next(err);
   }
